@@ -6,7 +6,7 @@ import datetime as dt
 from decimal import Decimal
 from pathlib import Path
 
-from supabase_helpers import upload_image_to_supabase  # (kept for future use)
+from supabase_helpers import upload_image_to_supabase
 
 from flask import (
     Flask, render_template, request, redirect, url_for, flash,
@@ -49,32 +49,26 @@ def create_app():
     if os.path.exists(instance_env_path):
         load_dotenv(instance_env_path)
     else:
-        # Also allow .env for convenience if user prefers
         load_dotenv()
 
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "change-this")
-    # SQLite path: default to instance/app.db if not provided
     db_url = os.getenv("DATABASE_URL")
     if not db_url:
         db_url = "sqlite:///" + os.path.join(app.instance_path, "app.db")
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    # Uploads
     app.config["UPLOAD_FOLDER"] = os.getenv("UPLOAD_FOLDER", "static/uploads")
     Path(app.config["UPLOAD_FOLDER"]).mkdir(parents=True, exist_ok=True)
-    app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024  # 2 MB
+    app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024
 
-    # Init extensions
     db.init_app(app)
     login_manager.init_app(app)
     csrf.init_app(app)
     login_manager.login_view = "admin.login"
 
-    # Register Jinja filters/context
     register_template_helpers(app)
 
-    # Blueprints
     from flask import Blueprint
     store_bp = Blueprint("store", __name__)
     admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -98,7 +92,7 @@ def create_app():
         name = db.Column(db.String(255), nullable=False)
         description = db.Column(db.Text, default="")
         price = db.Column(db.Numeric(10, 2), nullable=False, default=0)
-        image_filename = db.Column(db.String(255))  # stored under static/uploads
+        image_filename = db.Column(db.String(255))
         category = db.Column(db.String(120))
         is_active = db.Column(db.Boolean, default=True)
         created_at = db.Column(db.DateTime, default=dt.datetime.utcnow)
@@ -110,7 +104,7 @@ def create_app():
         contact_email = db.Column(db.String(255), default="")
         phone = db.Column(db.String(120), default="")
         address = db.Column(db.String(255), default="")
-        theme_color = db.Column(db.String(20), default="blue")  # blue, green, red, purple, teal
+        theme_color = db.Column(db.String(20), default="blue")
         logo_filename = db.Column(db.String(255))
         paypal_client_id = db.Column(db.String(255), default="YOUR_PAYPAL_CLIENT_ID")
         mmg_instructions = db.Column(db.Text, default="Contact the store to pay via MMG.")
@@ -118,14 +112,14 @@ def create_app():
     class Order(db.Model):
         id = db.Column(db.Integer, primary_key=True)
         created_at = db.Column(db.DateTime, default=dt.datetime.utcnow)
-        items_json = db.Column(db.Text, nullable=False)  # serialized array of {id, name, price, qty}
+        items_json = db.Column(db.Text, nullable=False)
         subtotal = db.Column(db.Numeric(10, 2), nullable=False, default=0)
         customer_name = db.Column(db.String(255), nullable=False)
         email = db.Column(db.String(255), nullable=False)
         phone = db.Column(db.String(120), nullable=False)
         address = db.Column(db.String(255), nullable=False)
-        payment_method = db.Column(db.String(20), nullable=False)  # paypal | mmg
-        status = db.Column(db.String(20), nullable=False)  # paid | pending
+        payment_method = db.Column(db.String(20), nullable=False)
+        status = db.Column(db.String(20), nullable=False)
 
     app.User = User
     app.Product = Product
@@ -175,29 +169,19 @@ def create_app():
     app.ProductForm = ProductForm
     app.SettingsForm = SettingsForm
 
-    # ----------------------------------------------------------------------------------
-    # Login manager
-    # ----------------------------------------------------------------------------------
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
 
-    # ----------------------------------------------------------------------------------
-    # Helpers
-    # ----------------------------------------------------------------------------------
     def allowed_file(filename: str) -> bool:
         return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
     def save_uploaded(file_storage):
-        """Upload to Supabase Storage if configured; otherwise save locally.
-        Returns a public URL (Supabase) or local filename under UPLOAD_FOLDER.
-        """
         if not file_storage or file_storage.filename == "":
             return None
         if not allowed_file(file_storage.filename):
             return None
 
-        # Try Supabase first
         try:
             supabase_url = os.getenv("SUPABASE_URL")
             supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
@@ -208,7 +192,6 @@ def create_app():
         except Exception as e:
             print(f"Supabase upload failed, falling back to local save: {e}")
 
-        # Fallback: local save
         filename = secure_filename(file_storage.filename)
         root, ext = os.path.splitext(filename)
         filename = f"{root}_{uuid.uuid4().hex[:8]}{ext}"
@@ -226,7 +209,7 @@ def create_app():
         return s
 
     def get_cart():
-        return session.get("cart", {})  # { product_id: qty }
+        return session.get("cart", {})
 
     def set_cart(cart):
         session["cart"] = cart
@@ -258,12 +241,8 @@ def create_app():
             })
         return items, total
 
-    # ----------------------------------------------------------------------------------
-    # Lifecycle / DB init
-    # ----------------------------------------------------------------------------------
     with app.app_context():
         db.create_all()
-        # Seed admin
         default_email = os.getenv("DEFAULT_ADMIN_EMAIL", "admin@example.com")
         default_password = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin123")
         admin = User.query.filter_by(email=default_email).first()
@@ -272,12 +251,8 @@ def create_app():
             admin.set_password(default_password)
             db.session.add(admin)
             db.session.commit()
-        # Ensure settings row
         get_settings()
 
-    # ----------------------------------------------------------------------------------
-    # Request hooks
-    # ----------------------------------------------------------------------------------
     @app.before_request
     def load_request_settings():
         g.settings = get_settings()
@@ -315,7 +290,6 @@ def create_app():
         items, total = cart_items_and_total()
         return render_template("cart.html", items=items, total=total)
 
-    # --- API: Cart (CSRF exempt for JSON fetch convenience) ---
     @csrf.exempt
     @store_bp.route("/api/cart/add", methods=["POST"])
     def api_cart_add():
@@ -369,7 +343,6 @@ def create_app():
         total_usd = max(1.00, round(total_usd, 2))
         return render_template("checkout.html", items=items, total=total, total_usd=total_usd)
 
-    # --- API: Orders via checkout ---
     @csrf.exempt
     @store_bp.route("/api/order/paypal", methods=["POST"])
     def api_order_paypal():
@@ -449,7 +422,6 @@ def create_app():
                 flash("Logged in.", "success")
                 return redirect(url_for("admin.dashboard"))
             flash("Invalid credentials.", "danger")
-        # Use dedicated admin login template for professional UI
         return render_template("admin_login.html", form=form)
 
     @admin_bp.route("/logout")
@@ -469,7 +441,6 @@ def create_app():
     @admin_bp.route("/account", methods=["GET", "POST"])
     @login_required
     def change_password():
-        """Change the current user's password."""
         form = app.ChangePasswordForm()
         if form.validate_on_submit():
             if not current_user.check_password(form.current_password.data):
@@ -580,15 +551,9 @@ def create_app():
             return redirect(url_for("admin.settings_view"))
         return render_template("admin_settings.html", form=form, settings=s)
 
-    # ----------------------------------------------------------------------------------
-    # Register blueprints
-    # ----------------------------------------------------------------------------------
     app.register_blueprint(store_bp)
     app.register_blueprint(admin_bp)
 
-    # ----------------------------------------------------------------------------------
-    # Static uploads (optional explicit route for clarity)
-    # ----------------------------------------------------------------------------------
     @app.route("/uploads/<path:filename>")
     def uploaded_file(filename):
         return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
@@ -596,13 +561,9 @@ def create_app():
     return app
 
 
-# --------------------------------------------------------------------------------------
-# Jinja helpers
-# --------------------------------------------------------------------------------------
 def register_template_helpers(app: Flask):
     @app.context_processor
     def inject_settings():
-        # g.settings and g.cart_count set in before_request
         return {
             "settings": getattr(g, "settings", None),
             "cart_count": getattr(g, "cart_count", 0),
@@ -615,16 +576,11 @@ def register_template_helpers(app: Flask):
             return ""
         try:
             d = Decimal(str(amount))
-            # show with thousands separators, 2 decimals
             return f"GYD ${d:,.2f}"
         except Exception:
             return f"GYD ${amount}"
 
 
-# --------------------------------------------------------------------------------------
-# Entrypoint
-# --------------------------------------------------------------------------------------
 if __name__ == "__main__":
     app = create_app()
-    # For local dev
     app.run(host="0.0.0.0", port=5000, debug=True)
