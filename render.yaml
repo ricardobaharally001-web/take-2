@@ -4,12 +4,12 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn -w 2 -k gthread -b 0.0.0.0:10000 app:app
+    startCommand: gunicorn app:app
     envVars:
-      - key: PORT
-        value: "10000"
-      - key: FLASK_ENV
-        value: "production"
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+      - key: SECRET_KEY
+        generateValue: true
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
