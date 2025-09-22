@@ -1,1 +1,10 @@
-
+{% extends "base_store.html" %}
+{% block content %}
+<h2 class="text-center mb-4">Your Cart</h2>
+<div id="cartContainer" class="mx-auto" style="max-width: 800px;">
+  <!-- Filled by JS -->
+</div>
+<div class="text-center mt-4">
+  <button id="checkoutBtn" class="btn btn-primary btn-lg">Checkout</button>
+</div>
+{% endblock %}
