@@ -1,19 +1,220 @@
 {% extends "base_store.html" %}
+
 {% block content %}
-<h1>Your cart</h1>
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">Shopping Cart</h1>
+    <p class="text-muted mb-0">Review your selected items</p>
+  </div>
+  <div>
+    <a href="{{ url_for('store.products_view') }}" class="btn btn-outline-primary">
+      <i class="bi bi-arrow-left me-2"></i>
+      Continue Shopping
+    </a>
+  </div>
+</div>
+
+<div id="cart-contents">
+  {% if items %}
+    <div class="row g-4">
+      <!-- Cart Items -->
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="bi bi-cart3 me-2"></i>
+              Cart Items ({{ items|length }})
+            </h5>
+          </div>
+          <div class="card-body p-0">
+            {% for i in items %}
+              <div class="cart-item d-flex align-items-center">
+                <div class="flex-shrink-0 me-3">
+                  {% set img_src = i.image_filename if i.image_filename and i.image_filename.startswith('http') else (url_for('uploaded_file', filename=i.image_filename) if i.image_filename else 'https://via.placeholder.com/80x80/f8f9fa/6c757d?text=Product') %}
+                  <img src="{{ img_src }}" alt="{{ i.name }}" class="rounded" style="width: 80px; height: 80px; object-fit: cover;">
+                </div>
+                
+                <div class="flex-grow-1">
+                  <div class="row align-items-center">
+                    <div class="col-md-5">
+                      <h6 class="mb-1">{{ i.name }}</h6>
+                      {% if i.category %}
+                        <small class="text-muted">{{ i.category }}</small>
+                      {% endif %}
+                      <div class="mt-1">
+                        <span class="fw-semibold text-primary">{{ i.price|gyd }}</span>
+                      </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                      <label class="form-label small">Quantity</label>
+                      <div class="input-group input-group-sm" style="max-width: 120px;">
+                        <button class="btn btn-outline-secondary qty-decrease" type="button" data-id="{{ i.id }}">
+                          <i class="bi bi-dash"></i>
+                        </button>
+                        <input type="number" class="form-control text-center qty-input" value="{{ i.qty }}" min="1" max="{{ i.stock_quantity }}" data-id="{{ i.id }}">
+                        <button class="btn btn-outline-secondary qty-increase" type="button" data-id="{{ i.id }}" {{ 'disabled' if i.qty >= i.stock_quantity else '' }}>
+                          <i class="bi bi-plus"></i>
+                        </button>
+                      </div>
+                      {% if i.stock_quantity <= 5 %}
+                        <small class="text-warning">Only {{ i.stock_quantity }} in stock</small>
+                      {% endif %}
+                    </div>
+                    
+                    <div class="col-md-2">
+                      <div class="text-end">
+                        <div class="fw-bold">{{ i.line_total|gyd }}</div>
+                        <small class="text-muted">Total</small>
+                      </div>
+                    </div>
+                    
+                    <div class="col-md-2">
+                      <div class="text-end">
+                        <button class="btn btn-sm btn-outline-danger remove-item" data-id="{{ i.id }}" title="Remove item">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      
+      <!-- Cart Summary -->
+      <div class="col-lg-4">
+        <div class="card sticky-top" style="top: 100px;">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="bi bi-receipt me-2"></i>
+              Order Summary
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="d-flex justify-content-between mb-2">
+              <span>Subtotal ({{ items|length }} item{{ 's' if items|length != 1 else '' }}):</span>
+              <span id="subtotal">{{ total|gyd }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Shipping:</span>
+              <span class="text-success">Free</span>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between mb-3">
+              <strong>Total:</strong>
+              <strong class="price-large" id="total">{{ total|gyd }}</strong>
+            </div>
+            
+            <div class="d-grid gap-2">
+              <a class="btn btn-primary btn-lg" href="{{ url_for('store.checkout') }}">
+                <i class="bi bi-credit-card me-2"></i>
+                Proceed to Checkout
+              </a>
+              <a class="btn btn-outline-secondary" href="{{ url_for('store.products_view') }}">
+                <i class="bi bi-arrow-left me-2"></i>
+                Continue Shopping
+              </a>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Security Notice -->
+        <div class="card mt-3">
+          <div class="card-body text-center">
+            <i class="bi bi-shield-check text-success display-6 mb-2"></i>
+            <h6>Secure Checkout</h6>
+            <small class="text-muted">Your payment information is always protected.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <!-- Empty Cart -->
+    <div class="text-center py-5">
+      <div class="mb-4">
+        <i class="bi bi-cart-x display-1 text-muted"></i>
+      </div>
+      <h4 class="text-muted mb-3">Your cart is empty</h4>
+      <p class="text-muted mb-4">Looks like you haven't added any items to your cart yet.</p>
+      <a href="{{ url_for('store.products_view') }}" class="btn btn-primary btn-lg">
+        <i class="bi bi-grid-3x3-gap me-2"></i>
+        Start Shopping
+      </a>
+    </div>
+  {% endif %}
+</div>
+
 {% if items %}
-  <ul class="list-group mb-3">
-    {% for i in items %}
-      <li class="list-group-item d-flex justify-content-between">
-        <span>{{ i.name }} × {{ i.qty }}</span>
-        <span>{{ i.line_total|gyd }}</span>
-      </li>
-    {% endfor %}
-  </ul>
-  <p><strong>Subtotal:</strong> {{ total|gyd }}</p>
-  <a class="btn btn-primary" href="{{ url_for('store.checkout') }}">Checkout</a>
-{% else %}
-  <p>Cart is empty.</p>
-  <a class="btn btn-outline-primary" href="{{ url_for('store.products') }}">Continue shopping</a>
+<!-- Recommended Products Section -->
+<section class="mt-5 pt-5 border-top">
+  <div class="container">
+    <h3 class="h4 mb-4">You might also like</h3>
+    <p class="text-muted mb-4">Complete your order with these popular items</p>
+    <!-- This section could show related/recommended products -->
+    <div class="text-center">
+      <a href="{{ url_for('store.products_view') }}" class="btn btn-outline-primary">
+        <i class="bi bi-grid-3x3-gap me-2"></i>
+        Browse All Products
+      </a>
+    </div>
+  </div>
+</section>
 {% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Quantity increase/decrease buttons
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.qty-increase')) {
+      const btn = e.target.closest('.qty-increase');
+      const input = btn.parentElement.querySelector('.qty-input');
+      const max = parseInt(input.getAttribute('max'));
+      const current = parseInt(input.value);
+      if (current < max) {
+        input.value = current + 1;
+        input.dispatchEvent(new Event('input'));
+      }
+    }
+    
+    if (e.target.closest('.qty-decrease')) {
+      const btn = e.target.closest('.qty-decrease');
+      const input = btn.parentElement.querySelector('.qty-input');
+      const current = parseInt(input.value);
+      if (current > 1) {
+        input.value = current - 1;
+        input.dispatchEvent(new Event('input'));
+      }
+    }
+  });
+  
+  // Update quantity controls based on stock
+  document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('qty-input')) {
+      const input = e.target;
+      const increaseBtn = input.parentElement.querySelector('.qty-increase');
+      const max = parseInt(input.getAttribute('max'));
+      const current = parseInt(input.value);
+      
+      if (increaseBtn) {
+        increaseBtn.disabled = current >= max;
+      }
+    }
+  });
+  
+  // Add loading state to remove buttons
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('.remove-item')) {
+      const btn = e.target.closest('.remove-item');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+    }
+  });
+});
+</script>
 {% endblock %}

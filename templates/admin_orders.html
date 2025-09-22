@@ -81,6 +81,7 @@
               </td>
               <td>
                 <div class="admin-table-actions">
+                  <!-- View Details Modal Trigger -->
                   <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#orderModal{{ order.id }}" title="View Details">
                     👁️
                   </button>
@@ -105,6 +106,7 @@
   </div>
 {% endif %}
 
+<!-- Order Detail Modals -->
 {% for order in orders %}
   {% set items = order.items_json|fromjson if order.items_json else [] %}
   <div class="modal fade" id="orderModal{{ order.id }}" tabindex="-1">
@@ -116,6 +118,7 @@
         </div>
         <div class="modal-body">
           <div class="row g-4">
+            <!-- Customer Info -->
             <div class="col-md-6">
               <h6>Customer Information</h6>
               <table class="table table-sm">
@@ -125,6 +128,8 @@
                 <tr><th>Address:</th><td>{{ order.address if order.address else 'N/A' }}</td></tr>
               </table>
             </div>
+            
+            <!-- Order Info -->
             <div class="col-md-6">
               <h6>Order Information</h6>
               <table class="table table-sm">
@@ -138,6 +143,8 @@
                 <tr><th>Total:</th><td><strong>{{ order.subtotal|gyd }}</strong></td></tr>
               </table>
             </div>
+            
+            <!-- Items -->
             <div class="col-12">
               <h6>Order Items</h6>
               <div class="table-responsive">

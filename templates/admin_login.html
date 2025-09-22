@@ -16,6 +16,7 @@
 
         <form method="post" novalidate>
           {{ form.hidden_tag() }}
+          
           <div class="mb-3">
             <label for="email" class="form-label">Email Address</label>
             {{ form.email(class="form-control", id="email", placeholder="admin@example.com") }}
@@ -23,6 +24,7 @@
               <div class="form-text text-danger">{{ error }}</div>
             {% endfor %}
           </div>
+
           <div class="mb-4">
             <label for="password" class="form-label">Password</label>
             {{ form.password(class="form-control", id="password", placeholder="Password") }}
@@ -30,17 +32,23 @@
               <div class="form-text text-danger">{{ error }}</div>
             {% endfor %}
           </div>
-          <button type="submit" class="btn btn-primary w-100 mb-3">Sign In</button>
+
+          <button type="submit" class="btn btn-primary w-100 mb-3">
+            Sign In
+          </button>
         </form>
 
         <div class="text-center">
           <small class="text-muted">
-            <a href="{{ url_for('store.index') }}" class="text-decoration-none">← Back to Store</a>
+            <a href="{{ url_for('store.index') }}" class="text-decoration-none">
+              ← Back to Store
+            </a>
           </small>
         </div>
       </div>
     </div>
 
+    <!-- Default credentials info (remove in production) -->
     <div class="card mt-3 border-warning">
       <div class="card-body p-3">
         <h6 class="card-title text-warning">⚠️ Default Credentials</h6>
