@@ -439,7 +439,7 @@ def create_app():
         return render_template("index.html", products=products)
 
     @store_bp.route("/products")
-    def products_view():
+    def products_view():  # FIXED: Changed from 'products' to 'products_view'
         category_id = request.args.get("category", type=int)
         q = Product.query.filter_by(is_active=True)
         if category_id:
