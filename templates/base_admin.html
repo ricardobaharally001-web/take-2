@@ -1,1 +1,384 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Admin - {{ settings.store_name or "Professional Store" }}{% endblock %}</title>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #1f2937;
+      --navbar-bg: #f8fafc;
+      --border-color: #e5e7eb;
+      --card-bg: #ffffff;
+      --muted-color: #6b7280;
+      --primary-blue: #2563eb;
+      --primary-blue-hover: #1d4ed8;
+      --danger-red: #dc2626;
+      --danger-red-hover: #b91c1c;
+      --light-bg: #f9fafb;
+      --admin-bg: #f8fafc;
+    }
 
+    [data-theme="dark"] {
+      --bg-color: #111827;
+      --text-color: #f9fafb;
+      --navbar-bg: #1f2937;
+      --border-color: #374151;
+      --card-bg: #1f2937;
+      --muted-color: #9ca3af;
+      --light-bg: #374151;
+      --admin-bg: #0f172a;
+    }
+
+    * {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    }
+
+    body {
+      background-color: var(--admin-bg);
+      color: var(--text-color);
+      font-weight: 400;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      min-height: 100vh;
+    }
+
+    .admin-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    .admin-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .admin-header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--text-color);
+      margin-bottom: 0.5rem;
+    }
+
+    .admin-header p {
+      color: var(--muted-color);
+      font-size: 1.1rem;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      transition: all 0.3s ease;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-primary {
+      background-color: var(--primary-blue) !important;
+      border-color: var(--primary-blue) !important;
+      font-weight: 500;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover, .btn-primary:focus {
+      background-color: var(--primary-blue-hover) !important;
+      border-color: var(--primary-blue-hover) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-danger {
+      background-color: var(--danger-red) !important;
+      border-color: var(--danger-red) !important;
+      font-weight: 500;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-danger:hover, .btn-danger:focus {
+      background-color: var(--danger-red-hover) !important;
+      border-color: var(--danger-red-hover) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+    }
+
+    .btn-outline-primary {
+      color: var(--primary-blue) !important;
+      border-color: var(--primary-blue) !important;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-outline-primary:hover {
+      background-color: var(--primary-blue) !important;
+      color: #fff !important;
+      transform: translateY(-1px);
+    }
+
+    .btn-outline-danger {
+      color: var(--danger-red) !important;
+      border-color: var(--danger-red) !important;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-outline-danger:hover {
+      background-color: var(--danger-red) !important;
+      color: #fff !important;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background-color: var(--muted-color) !important;
+      border-color: var(--muted-color) !important;
+      color: white !important;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background-color: #4b5563 !important;
+      border-color: #4b5563 !important;
+      transform: translateY(-1px);
+    }
+
+    .form-control, .form-select {
+      background-color: var(--card-bg);
+      border-color: var(--border-color);
+      color: var(--text-color);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      transition: all 0.2s ease;
+    }
+
+    .form-control:focus, .form-select:focus {
+      background-color: var(--card-bg);
+      border-color: var(--primary-blue);
+      color: var(--text-color);
+      box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .form-label {
+      font-weight: 500;
+      color: var(--text-color);
+      margin-bottom: 0.5rem;
+    }
+
+    .text-muted {
+      color: var(--muted-color) !important;
+    }
+
+    .border {
+      border-color: var(--border-color) !important;
+    }
+
+    .bg-light {
+      background-color: var(--light-bg) !important;
+    }
+
+    .table {
+      color: var(--text-color);
+    }
+
+    .table th {
+      border-color: var(--border-color);
+      font-weight: 600;
+      background-color: var(--light-bg);
+    }
+
+    .table td {
+      border-color: var(--border-color);
+    }
+
+    .alert {
+      border: none;
+      border-radius: 8px;
+      border-left: 4px solid;
+    }
+
+    .alert-success {
+      background-color: rgba(34, 197, 94, 0.1);
+      border-left-color: #22c55e;
+      color: #166534;
+    }
+
+    .alert-danger {
+      background-color: rgba(239, 68, 68, 0.1);
+      border-left-color: #ef4444;
+      color: #991b1b;
+    }
+
+    .alert-warning {
+      background-color: rgba(245, 158, 11, 0.1);
+      border-left-color: #f59e0b;
+      color: #92400e;
+    }
+
+    [data-theme="dark"] .alert-success {
+      color: #86efac;
+    }
+
+    [data-theme="dark"] .alert-danger {
+      color: #fca5a5;
+    }
+
+    [data-theme="dark"] .alert-warning {
+      color: #fcd34d;
+    }
+
+    .admin-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-hover));
+      color: white;
+      padding: 2rem;
+      border-radius: 12px;
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+    }
+
+    .stat-number {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      font-size: 1rem;
+      opacity: 0.9;
+    }
+
+    .admin-nav {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+      .admin-container {
+        padding: 1rem;
+      }
+      
+      .admin-header h1 {
+        font-size: 2rem;
+      }
+      
+      .admin-nav {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .btn {
+        width: 100%;
+        max-width: 200px;
+      }
+    }
+  </style>
+
+  <script>
+    (function(){
+      try {
+        var saved = localStorage.getItem('store-theme');
+        if (!saved) {
+          saved = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+          localStorage.setItem('store-theme', saved);
+        }
+        var theme = (saved === 'dark') ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        document.addEventListener('DOMContentLoaded', function(){
+          document.body && document.body.setAttribute('data-theme', theme);
+        });
+      } catch(e) {}
+    })();
+  </script>
+
+  {% if settings.logo_filename %}
+    {% set logo_src = settings.logo_filename if settings.logo_filename.startswith('http') else url_for('uploaded_file', filename=settings.logo_filename) %}
+    <link rel="icon" type="image/x-icon" href="{{ logo_src }}">
+  {% endif %}
+  
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="admin-container">
+    {% with messages = get_flashed_messages(with_categories=True) %}
+      {% if messages %}
+        <div class="alert-container mb-4">
+          {% for cat, msg in messages %}
+            <div class="alert alert-{{ 'warning' if cat=='message' else cat }} alert-dismissible fade show" role="alert">
+              <div class="d-flex align-items-center">
+                {% if cat == 'success' %}
+                  <i class="bi bi-check-circle-fill me-2"></i>
+                {% elif cat == 'danger' %}
+                  <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                {% elif cat == 'warning' %}
+                  <i class="bi bi-exclamation-circle-fill me-2"></i>
+                {% else %}
+                  <i class="bi bi-info-circle-fill me-2"></i>
+                {% endif %}
+                <span>{{ msg }}</span>
+              </div>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    // Dark mode toggle
+    document.addEventListener('DOMContentLoaded', function() {
+      const toggle = document.getElementById('dark-toggle');
+      if (toggle) {
+        toggle.addEventListener('click', function() {
+          const current = document.documentElement.getAttribute('data-theme') || 'light';
+          const next = current === 'dark' ? 'light' : 'dark';
+          document.documentElement.setAttribute('data-theme', next);
+          document.body.setAttribute('data-theme', next);
+          try {
+            localStorage.setItem('store-theme', next);
+          } catch(e) {}
+        });
+      }
+    });
+  </script>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>
