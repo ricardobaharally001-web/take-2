@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, url_for, send_from_directory
+from flask import Flask, render_template, send_from_directory
 from dotenv import load_dotenv
 
 # Load env in local dev; on Render, env is injected
@@ -7,6 +7,7 @@ load_dotenv()
 
 def create_app():
     app = Flask(__name__, static_folder="static", template_folder="templates")
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 
     # Register blueprints
     from store import store_bp
@@ -19,7 +20,7 @@ def create_app():
     # Index route (landing)
     @app.route("/")
     def index():
-        # A simple curated selection on home (reads from products.json via store module utility)
+        # A simple curated selection on home
         from store import load_products
         products = load_products()[:6]
         return render_template("index.html", products=products)
@@ -32,8 +33,9 @@ def create_app():
 
     return app
 
+# Create app instance at module level
 app = create_app()
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "5000"))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=False)
