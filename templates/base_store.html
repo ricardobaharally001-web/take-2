@@ -1,37 +1,254 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light" class="theme-{{ settings.theme_color or 'blue' }}">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}{{ settings.store_name or "Professional Store" }}{% endblock %}</title>
   
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #1f2937;
+      --navbar-bg: #f8fafc;
+      --border-color: #e5e7eb;
+      --card-bg: #ffffff;
+      --muted-color: #6b7280;
+      --primary-blue: #2563eb;
+      --primary-blue-hover: #1d4ed8;
+      --danger-red: #dc2626;
+      --danger-red-hover: #b91c1c;
+      --light-bg: #f9fafb;
+    }
+
+    [data-theme="dark"] {
+      --bg-color: #111827;
+      --text-color: #f9fafb;
+      --navbar-bg: #1f2937;
+      --border-color: #374151;
+      --card-bg: #1f2937;
+      --muted-color: #9ca3af;
+      --light-bg: #374151;
+    }
+
+    * {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-weight: 400;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .navbar {
+      background-color: var(--navbar-bg) !important;
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.75rem 0;
+      transition: background-color 0.3s ease;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-blue) !important;
+      border-color: var(--primary-blue) !important;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary:hover, .btn-primary:focus {
+      background-color: var(--primary-blue-hover) !important;
+      border-color: var(--primary-blue-hover) !important;
+      transform: translateY(-1px);
+    }
+
+    .btn-danger {
+      background-color: var(--danger-red) !important;
+      border-color: var(--danger-red) !important;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .btn-danger:hover, .btn-danger:focus {
+      background-color: var(--danger-red-hover) !important;
+      border-color: var(--danger-red-hover) !important;
+      transform: translateY(-1px);
+    }
+
+    .btn-outline-primary {
+      color: var(--primary-blue) !important;
+      border-color: var(--primary-blue) !important;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .btn-outline-primary:hover {
+      background-color: var(--primary-blue) !important;
+      color: #fff !important;
+      transform: translateY(-1px);
+    }
+
+    .btn-outline-danger {
+      color: var(--danger-red) !important;
+      border-color: var(--danger-red) !important;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .btn-outline-danger:hover {
+      background-color: var(--danger-red) !important;
+      color: #fff !important;
+      transform: translateY(-1px);
+    }
+
+    .theme-toggle {
+      border: 1px solid var(--border-color) !important;
+      color: var(--text-color) !important;
+      background: transparent !important;
+      transition: all 0.2s ease;
+    }
+
+    .theme-toggle:hover {
+      background-color: var(--light-bg) !important;
+      transform: translateY(-1px);
+    }
+
+    .text-muted {
+      color: var(--muted-color) !important;
+    }
+
+    .border {
+      border-color: var(--border-color) !important;
+    }
+
+    .bg-light {
+      background-color: var(--light-bg) !important;
+    }
+
+    .navbar-brand {
+      font-weight: 600;
+      color: var(--text-color) !important;
+      text-decoration: none !important;
+    }
+
+    .nav-link {
+      color: var(--text-color) !important;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    .nav-link:hover {
+      color: var(--primary-blue) !important;
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card-img-top {
+      height: 200px;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .card:hover .card-img-top {
+      transform: scale(1.05);
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    .cart-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background-color: var(--danger-red);
+      color: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .alert {
+      border: none;
+      border-radius: 8px;
+    }
+
+    .form-control, .form-select {
+      background-color: var(--card-bg);
+      border-color: var(--border-color);
+      color: var(--text-color);
+    }
+
+    .form-control:focus, .form-select:focus {
+      background-color: var(--card-bg);
+      border-color: var(--primary-blue);
+      color: var(--text-color);
+      box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+    }
+
+    footer {
+      background-color: var(--navbar-bg) !important;
+      border-top: 1px solid var(--border-color);
+    }
+
+    @media (max-width: 991.98px) {
+      .navbar .container {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: 1rem;
+      }
+      
+      .navbar-brand {
+        justify-self: start;
+        margin-right: 0;
+      }
+      
+      .mobile-cart {
+        justify-self: center;
+      }
+      
+      .navbar-toggler {
+        justify-self: end;
+        border: none !important;
+        padding: 0.25rem;
+      }
+      
+      .navbar-collapse {
+        grid-column: 1 / -1;
+        margin-top: 1rem;
+      }
+    }
+  </style>
+
   <script>
     (function(){
       try {
-        function getParam(name){
-          var m = new RegExp('(?:^|&)' + name + '=([^&]*)').exec(window.location.search.slice(1));
-          return m ? decodeURIComponent(m[1]) : null;
-        }
-        function getCookie(name){
-          var m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\[\]\\\/\+^])/g, '\\$1') + '=([^;]*)'));
-          return m ? decodeURIComponent(m[1]) : null;
-        }
-        function setCookie(name, value){
-          document.cookie = name + '=' + encodeURIComponent(value) + ';path=/;max-age=31536000';
-        }
-        var urlTheme = getParam('theme');
-        if (urlTheme === 'dark' || urlTheme === 'light') {
-          localStorage.setItem('store-theme', urlTheme);
-          setCookie('store-theme', urlTheme);
-        }
-        var saved = localStorage.getItem('store-theme') || getCookie('store-theme');
+        var saved = localStorage.getItem('store-theme');
         if (!saved) {
           saved = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
           localStorage.setItem('store-theme', saved);
-          setCookie('store-theme', saved);
         }
         var theme = (saved === 'dark') ? 'dark' : 'light';
         document.documentElement.setAttribute('data-theme', theme);
@@ -51,36 +268,38 @@
   
   {% block extra_head %}{% endblock %}
 </head>
-<body class="theme-{{ settings.theme_color or 'blue' }}">
-  <nav class="navbar navbar-expand-lg" role="navigation" aria-label="Main navigation">
+<body>
+  <nav class="navbar navbar-expand-lg sticky-top">
     <div class="container">
-      <!-- Brand visible on mobile (logo on left), hidden on large screens -->
+      <!-- Mobile: Logo on left -->
       <a class="navbar-brand d-flex align-items-center d-lg-none" href="{{ url_for('store.index') }}">
         {% if settings.logo_filename %}
           {% set logo_src = settings.logo_filename if settings.logo_filename.startswith('http') else url_for('uploaded_file', filename=settings.logo_filename) %}
-          <img src="{{ logo_src }}" alt="{{ settings.store_name }}" style="height: 32px; margin-right: 12px;" class="rounded">
+          <img src="{{ logo_src }}" alt="{{ settings.store_name }}" style="height: 32px; margin-right: 8px;" class="rounded">
         {% endif %}
         <span class="fw-bold">{{ settings.store_name or "Store" }}</span>
       </a>
       
+      <!-- Mobile: Cart in center -->
       <div class="d-lg-none mobile-cart">
-        <a class="btn btn-outline-primary position-relative" href="{{ url_for('store.cart_view') }}">
+        <a class="btn btn-primary position-relative" href="{{ url_for('store.cart_view') }}">
           <i class="bi bi-cart3"></i>
-          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {{ '' if cart_count > 0 else 'd-none' }}" id="cart-count-mobile">
-            {{ cart_count }}
-            <span class="visually-hidden">items in cart</span>
-          </span>
+          {% if cart_count > 0 %}
+            <span class="cart-badge">{{ cart_count }}</span>
+          {% endif %}
         </a>
       </div>
       
-      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-        <i class="bi bi-list" style="font-size: 1.5rem;"></i>
+      <!-- Mobile: Hamburger menu on right -->
+      <button class="navbar-toggler d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <i class="bi bi-list" style="font-size: 1.5rem; color: var(--text-color);"></i>
       </button>
       
       <div class="collapse navbar-collapse" id="navbarNav">
+        <!-- Desktop & Mobile: Left side navigation -->
         <ul class="navbar-nav me-auto">
           <li class="nav-item">
-            <button id="dark-toggle" class="btn btn-outline-secondary theme-toggle nav-link border-0" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+            <button id="dark-toggle" class="btn theme-toggle nav-link border-0" type="button" title="Toggle dark mode">
               <i class="bi bi-moon-fill me-2"></i>
               <span class="d-lg-none">Dark Mode</span>
             </button>
@@ -99,19 +318,20 @@
           </li>
         </ul>
         
+        <!-- Desktop: Cart in center -->
         <ul class="navbar-nav mx-auto d-none d-lg-flex">
           <li class="nav-item">
-            <a class="btn btn-primary position-relative d-flex align-items-center" href="{{ url_for('store.cart_view') }}">
+            <a class="btn btn-primary position-relative px-4" href="{{ url_for('store.cart_view') }}">
               <i class="bi bi-cart3 me-2"></i>
-              <span>Cart</span>
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {{ '' if cart_count > 0 else 'd-none' }}" id="cart-count-desktop">
-                {{ cart_count }}
-                <span class="visually-hidden">items in cart</span>
-              </span>
+              <span class="fw-semibold">Cart</span>
+              {% if cart_count > 0 %}
+                <span class="cart-badge">{{ cart_count }}</span>
+              {% endif %}
             </a>
           </li>
         </ul>
         
+        <!-- Desktop & Mobile: Right side (contact + logo/business name) -->
         <ul class="navbar-nav">
           {% if settings.contact_email %}
           <li class="nav-item">
@@ -137,14 +357,14 @@
               <span>Admin</span>
             </a>
           </li>
-          <!-- Desktop: Business name and logo on the right -->
+          <!-- Desktop: Logo and business name on right -->
           <li class="nav-item d-none d-lg-flex align-items-center ms-3">
             <div class="d-flex align-items-center">
               {% if settings.logo_filename %}
                 {% set logo_src = settings.logo_filename if settings.logo_filename.startswith('http') else url_for('uploaded_file', filename=settings.logo_filename) %}
-                <img src="{{ logo_src }}" alt="{{ settings.store_name }}" style="height: 24px; margin-right: 8px;" class="rounded">
+                <img src="{{ logo_src }}" alt="{{ settings.store_name }}" style="height: 28px; margin-right: 10px;" class="rounded">
               {% endif %}
-              <span class="fw-semibold text-muted">{{ settings.store_name }}</span>
+              <span class="fw-semibold">{{ settings.store_name }}</span>
             </div>
           </li>
         </ul>
@@ -171,7 +391,7 @@
                   {% endif %}
                   <span>{{ msg }}</span>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
               </div>
             {% endfor %}
           </div>
@@ -182,7 +402,7 @@
     </div>
   </main>
 
-  <footer class="mt-auto py-4 bg-light border-top">
+  <footer class="mt-auto py-4">
     <div class="container">
       <div class="row align-items-center">
         <div class="col-lg-8">
@@ -192,7 +412,7 @@
               <img src="{{ logo_src }}" alt="{{ settings.store_name }}" style="height: 24px; margin-right: 12px;" class="rounded">
             {% endif %}
             <div>
-              <h6 class="mb-1">{{ settings.store_name or "Professional Store" }}</h6>
+              <h6 class="mb-1 fw-semibold">{{ settings.store_name or "Professional Store" }}</h6>
               {% if settings.tagline %}
                 <small class="text-muted">{{ settings.tagline }}</small>
               {% endif %}
@@ -225,7 +445,7 @@
         <div class="col-lg-4 text-lg-end">
           <div class="d-flex flex-column align-items-lg-end">
             <div class="mb-2">
-              <a href="{{ url_for('admin.login') }}" class="btn btn-sm btn-outline-secondary">
+              <a href="{{ url_for('admin.login') }}" class="btn btn-sm btn-outline-primary">
                 <i class="bi bi-gear me-1"></i>
                 Admin Panel
               </a>
@@ -239,7 +459,7 @@
     </div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="{{ url_for('static', filename='script.js') }}"></script>
   {% block extra_scripts %}{% endblock %}
 </body>
