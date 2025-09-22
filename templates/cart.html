@@ -1,0 +1,19 @@
+{% extends "base_store.html" %}
+{% block content %}
+<h1>Your cart</h1>
+{% if items %}
+  <ul class="list-group mb-3">
+    {% for i in items %}
+      <li class="list-group-item d-flex justify-content-between">
+        <span>{{ i.name }} × {{ i.qty }}</span>
+        <span>{{ i.line_total|gyd }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+  <p><strong>Subtotal:</strong> {{ total|gyd }}</p>
+  <a class="btn btn-primary" href="{{ url_for('store.checkout') }}">Checkout</a>
+{% else %}
+  <p>Cart is empty.</p>
+  <a class="btn btn-outline-primary" href="{{ url_for('store.products') }}">Continue shopping</a>
+{% endif %}
+{% endblock %}

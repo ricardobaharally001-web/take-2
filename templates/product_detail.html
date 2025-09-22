@@ -1,0 +1,10 @@
+{% extends "base_store.html" %}
+{% block content %}
+<h1 class="mb-3">{{ product.name }}</h1>
+{% if product.image_filename %}
+  <img src="{{ url_for('uploaded_file', filename=product.image_filename) }}" class="img-fluid mb-3" alt="{{ product.name }}">
+{% endif %}
+<p>{{ product.description }}</p>
+<p class="fs-5"><strong>{{ product.price|gyd }}</strong></p>
+<a class="btn btn-secondary" href="{{ url_for('store.products') }}">Back</a>
+{% endblock %}
