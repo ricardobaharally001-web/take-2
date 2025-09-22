@@ -7,8 +7,8 @@ from supabase import create_client
 
 
 def _client():
-    url = os.getenv("https://shvwrlwzqsgnwwapqfga.supabase.co)
-    key = os.getenv("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNodndybHd6cXNnbnd3YXBxZmdhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1ODU1ODIxMSwiZXhwIjoyMDc0MTM0MjExfQ.AXq4WHp0a8fdiz5KW4kDV9JrNNy3MjgmJSNoYXRzhpY")
+    url = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_SERVICE_ROLE_KEY") 
     if not url or not key:
         raise RuntimeError("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables")
     return create_client(url, key)
