@@ -1,54 +1,218 @@
 {% extends "base_store.html" %}
+
 {% block content %}
-<div class="container py-4">
-  <h1 class="h4 mb-3">Products</h1>
-
-  <form class="row g-2 mb-3" method="get" action="{{ url_for('store.products') }}">
-    <div class="col-md-6">
-      <input type="text" class="form-control" name="q" placeholder="Search…" value="{{ q }}">
-    </div>
-    <div class="col-md-4">
-      <select class="form-select" name="category">
-        <option value="">All categories</option>
-        {% for c in categories %}
-          <option value="{{ c }}" {{ 'selected' if category==c else '' }}>{{ c }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-2">
-      <button class="btn btn-primary w-100">Filter</button>
-    </div>
-  </form>
-
-  <div class="row g-3">
-    {% for p in products %}
-      {% set img = p.image_filename %}
-      {% if img %}
-        {% if img.startswith('http') %}
-          {% set img_src = img %}
-        {% else %}
-          {% set img_src = url_for('uploaded_file', filename=img) %}
-        {% endif %}
-      {% else %}
-        {% set img_src = 'https://via.placeholder.com/600x400?text=Product' %}
-      {% endif %}
-
-      <div class="col-6 col-md-3">
-        <div class="card h-100">
-          <img class="card-img-top" src="{{ img_src }}" alt="{{ p.name }}">
-          <div class="card-body d-flex flex-column">
-            <h3 class="h6 mb-1">{{ p.name }}</h3>
-            <div class="text-muted mb-2">{{ p.price|gyd }}</div>
-            <div class="mt-auto d-flex gap-2">
-              <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('store.product_detail', product_id=p.id) }}">View</a>
-              <button class="btn btn-sm btn-primary add-to-cart-btn" data-product-id="{{ p.id }}">Add to Cart</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    {% else %}
-      <p>No products found.</p>
-    {% endfor %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 fw-bold mb-0">
+    <i class="bi bi-grid-3x3-gap me-2"></i>
+    All Products
+  </h1>
+  <div class="text-muted">
+    {{ products|length }} product{{ 's' if products|length != 1 else '' }} found
   </div>
 </div>
+
+<!-- Search and Filter Form -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" action="{{ url_for('store.products') }}" class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">
+          <i class="bi bi-search me-1"></i>
+          Search Products
+        </label>
+        <input type="text" class="form-control" name="q" placeholder="Search by name..." value="{{ q }}" 
+               style="padding-left: 2.5rem;">
+        <i class="bi bi-search position-absolute" style="left: 1rem; top: 50%; transform: translateY(-50%); color: var(--muted-color);"></i>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">
+          <i class="bi bi-funnel me-1"></i>
+          Category
+        </label>
+        <select class="form-select" name="category">
+          <option value="">All Categories</option>
+          {% for c in categories %}
+            <option value="{{ c }}" {{ 'selected' if category == c else '' }}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-primary w-100" type="submit">
+          <i class="bi bi-funnel-fill me-1"></i>
+          Filter
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Active Filters Display -->
+{% if q or category %}
+<div class="d-flex align-items-center gap-2 mb-4">
+  <span class="fw-semibold">Active Filters:</span>
+  {% if q %}
+    <span class="badge bg-primary">
+      Search: "{{ q }}"
+      <a href="{{ url_for('store.products', category=category) }}" class="text-white text-decoration-none ms-2">×</a>
+    </span>
+  {% endif %}
+  {% if category %}
+    <span class="badge bg-secondary">
+      Category: {{ category }}
+      <a href="{{ url_for('store.products', q=q) }}" class="text-white text-decoration-none ms-2">×</a>
+    </span>
+  {% endif %}
+  <a href="{{ url_for('store.products') }}" class="btn btn-sm btn-outline-secondary ms-2">
+    <i class="bi bi-x-circle me-1"></i>
+    Clear All
+  </a>
+</div>
+{% endif %}
+
+<!-- Products Grid -->
+{% if products %}
+<div class="product-grid">
+  {% for p in products %}
+    <div class="card h-100 shadow-sm border-0">
+      {% set img_src = p.image_filename if (p.image_filename and p.image_filename.startswith('http')) else (url_for('uploaded_file', filename=p.image_filename) if p.image_filename else 'https://via.placeholder.com/300x200?text=Product+Image') %}
+      
+      <div class="position-relative overflow-hidden">
+        <img class="card-img-top" src="{{ img_src }}" alt="{{ p.name }}">
+        <div class="position-absolute top-0 end-0 m-2">
+          <span class="badge bg-primary">{{ p.category or 'General' }}</span>
+        </div>
+        {% if not p.is_active %}
+        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" 
+             style="background: rgba(0,0,0,0.7);">
+          <span class="badge bg-secondary fs-6">Out of Stock</span>
+        </div>
+        {% endif %}
+      </div>
+      
+      <div class="card-body d-flex flex-column">
+        <h5 class="card-title fw-semibold mb-2">{{ p.name }}</h5>
+        
+        {% if p.description %}
+        <p class="card-text text-muted small mb-3 flex-grow-1">
+          {{ p.description[:120] }}{% if p.description|length > 120 %}...{% endif %}
+        </p>
+        {% endif %}
+        
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="h5 text-primary fw-bold mb-0">{{ p.price|gyd }}</span>
+          {% if p.is_active %}
+            <span class="badge bg-success">
+              <i class="bi bi-check-circle me-1"></i>
+              Available
+            </span>
+          {% else %}
+            <span class="badge bg-secondary">
+              <i class="bi bi-x-circle me-1"></i>
+              Out of Stock
+            </span>
+          {% endif %}
+        </div>
+        
+        <div class="mt-auto d-flex gap-2">
+          <a class="btn btn-outline-primary flex-fill" href="{{ url_for('store.product_detail', product_id=p.id) }}">
+            <i class="bi bi-eye me-1"></i>
+            View Details
+          </a>
+          {% if p.is_active %}
+          <button class="btn btn-primary add-to-cart-btn" data-product-id="{{ p.id }}" title="Add to Cart">
+            <i class="bi bi-cart-plus"></i>
+          </button>
+          {% else %}
+          <button class="btn btn-secondary" disabled title="Out of Stock">
+            <i class="bi bi-cart-x"></i>
+          </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<!-- Load More / Pagination placeholder -->
+<div class="text-center mt-5">
+  <p class="text-muted">Showing all {{ products|length }} products</p>
+</div>
+
+{% else %}
+<!-- No Products Found -->
+<div class="card">
+  <div class="card-body text-center py-5">
+    {% if q or category %}
+      <div class="display-1 text-muted mb-3">
+        <i class="bi bi-search"></i>
+      </div>
+      <h4 class="text-muted mb-3">No Products Found</h4>
+      <p class="text-muted mb-4">
+        We couldn't find any products matching 
+        {% if q %}"{{ q }}"{% endif %}
+        {% if q and category %} in {% endif %}
+        {% if category %}{{ category }}{% endif %}.
+        <br>Try adjusting your search criteria.
+      </p>
+      <a href="{{ url_for('store.products') }}" class="btn btn-primary">
+        <i class="bi bi-arrow-left me-2"></i>
+        View All Products
+      </a>
+    {% else %}
+      <div class="display-1 text-muted mb-3">
+        <i class="bi bi-box-seam"></i>
+      </div>
+      <h4 class="text-muted mb-3">No Products Available</h4>
+      <p class="text-muted mb-4">
+        We're working hard to stock our store with amazing products.
+        <br>Check back soon!
+      </p>
+      <a href="{{ url_for('store.index') }}" class="btn btn-primary">
+        <i class="bi bi-house me-2"></i>
+        Back to Home
+      </a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<style>
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.card-img-top {
+  height: 200px;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.card:hover .card-img-top {
+  transform: scale(1.05);
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.form-control:focus, .form-select:focus {
+  box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
+}
+
+@media (max-width: 768px) {
+  .product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+  
+  .d-flex.justify-content-between {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 1rem;
+  }
+}
+</style>
 {% endblock %}
