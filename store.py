@@ -136,9 +136,16 @@ def load_products():
     """Load products from Supabase or local file"""
     if supabase_client:
         try:
-            response = supabase_client.table('products').select('*').order('created_at', desc=True).execute()
-            if response.data:
-                return response.data
+            # Try 'products' table first, fall back to 'product' if it doesn't exist
+            try:
+                response = supabase_client.table('products').select('*').order('created_at', desc=True).execute()
+                if response.data:
+                    return response.data
+            except:
+                # Fallback to singular 'product' table
+                response = supabase_client.table('product').select('*').order('created_at', desc=True).execute()
+                if response.data:
+                    return response.data
         except Exception as e:
             print(f"Error loading from Supabase: {e}")
     
@@ -207,7 +214,11 @@ def save_products(products):
             for product in products:
                 if 'created_at' not in product:
                     product['created_at'] = datetime.now().isoformat()
-                supabase_client.table('products').upsert(product).execute()
+                # Try 'products' first, fall back to 'product'
+                try:
+                    supabase_client.table('products').upsert(product).execute()
+                except:
+                    supabase_client.table('product').upsert(product).execute()
         except Exception as e:
             print(f"Error saving to Supabase: {e}")
 
@@ -225,7 +236,11 @@ def add_product(name, price, description, image_url):
     
     if supabase_client:
         try:
-            response = supabase_client.table('products').insert(new_product).execute()
+            # Try 'products' first, fall back to 'product'
+            try:
+                response = supabase_client.table('products').insert(new_product).execute()
+            except:
+                response = supabase_client.table('product').insert(new_product).execute()
             return True
         except Exception as e:
             print(f"Error adding to Supabase: {e}")
@@ -240,7 +255,11 @@ def delete_product(pid):
     """Delete a product"""
     if supabase_client:
         try:
-            supabase_client.table('products').delete().eq('id', pid).execute()
+            # Try 'products' first, fall back to 'product'
+            try:
+                supabase_client.table('products').delete().eq('id', pid).execute()
+            except:
+                supabase_client.table('product').delete().eq('id', pid).execute()
             return True
         except Exception as e:
             print(f"Error deleting from Supabase: {e}")
