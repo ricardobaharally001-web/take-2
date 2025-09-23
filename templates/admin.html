@@ -72,12 +72,25 @@
                                  style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
                         </td>
                         <td>{{ p.name }}</td>
-                        <td>${{ '%.2f'|format(p.price) }}</td>
+                        <td>
+                            {% if p.price is defined %}
+                                ${{ '%.2f'|format(p.price) }}
+                            {% else %}
+                                <span class="text-muted">No price</span>
+                            {% endif %}
+                        </td>
                         <td>{{ p.description[:50] }}...</td>
                         <td>
-                            <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete('{{ p.id }}')">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                            <div class="d-flex gap-2">
+                                <a href="{{ url_for('store.admin_edit_product', pid=p.id) }}" 
+                                   class="btn btn-sm btn-outline-primary" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-danger" 
+                                        onclick="confirmDelete('{{ p.id }}')" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
