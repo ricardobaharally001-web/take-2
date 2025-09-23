@@ -222,17 +222,24 @@ def save_products(products):
         except Exception as e:
             print(f"Error saving to Supabase: {e}")
 
-def add_product(name, price, description, image_url):
+def add_product(name, price, description, image_url, category=''):
     """Add a new product"""
     pid = f"p{uuid.uuid4().hex[:8]}"
     new_product = {
         "id": pid,
         "name": name,
-        "price": round(float(price), 2),
         "description": description,
         "image": image_url,
+        "category": category,
         "created_at": datetime.now().isoformat()
     }
+    
+    # Only add price if it's provided and not empty
+    if price and price.strip():
+        try:
+            new_product["price"] = round(float(price), 2)
+        except ValueError:
+            pass  # Don't add price if invalid
     
     if supabase_client:
         try:
@@ -249,6 +256,50 @@ def add_product(name, price, description, image_url):
     products = load_products()
     products.append(new_product)
     save_products(products)
+    return True
+
+def update_product(pid, name, price, description, image_url, category=''):
+    """Update an existing product"""
+    products = load_products()
+    product = None
+    
+    for p in products:
+        if p.get('id') == pid:
+            product = p
+            break
+    
+    if not product:
+        return False
+    
+    # Update fields
+    product['name'] = name
+    product['description'] = description
+    product['image'] = image_url
+    product['category'] = category
+    
+    # Handle price - if empty/None, remove price field
+    if price and str(price).strip():
+        try:
+            product['price'] = round(float(price), 2)
+        except ValueError:
+            # Remove price if invalid
+            product.pop('price', None)
+    else:
+        # Remove price if empty
+        product.pop('price', None)
+    
+    save_products(products)
+    
+    if supabase_client:
+        try:
+            # Try 'products' first, fall back to 'product'
+            try:
+                supabase_client.table('products').update(product).eq('id', pid).execute()
+            except:
+                supabase_client.table('product').update(product).eq('id', pid).execute()
+        except Exception as e:
+            print(f"Error updating in Supabase: {e}")
+    
     return True
 
 def delete_product(pid):
@@ -394,7 +445,7 @@ def admin_add_product():
         return redirect(url_for("store.admin_login", next=url_for("store.admin")))
     
     name = request.form.get("name", "").strip()
-    price = request.form.get("price", "0")
+    price = request.form.get("price", "")
     desc = request.form.get("description", "").strip()
     image_url = request.form.get("image_url", "").strip()
     category = request.form.get("category", "").strip()
@@ -429,23 +480,85 @@ def admin_add_product():
             image_url = f"/static/uploads/{fn}"
     
     if not name:
-        return jsonify({"error": "Product name is required"}), 400
+        flash("Product name is required", "danger")
+        return redirect(request.referrer or url_for("store.admin"))
     
     if not image_url:
         image_url = "/static/img/placeholder.png"
     
-    # include category when adding
-    add_product(name, price, desc, image_url)
-    # add_product doesn't know about category; patch it in
-    products = load_products()
-    for p in products:
-        if p.get('name') == name and abs(p.get('price') - float(price)) < 0.0001 and p.get('image') == image_url:
-            p['category'] = category
-            break
-    save_products(products)
+    add_product(name, price, desc, image_url, category)
+    flash("Product added successfully", "success")
+    
     if category:
         return redirect(url_for("store.admin_category", slug=category))
     return redirect(url_for("store.admin"))
+
+@store_bp.route("/admin/edit/<pid>", methods=["GET", "POST"])
+def admin_edit_product(pid):
+    if not check_admin():
+        return redirect(url_for("store.admin_login", next=request.path))
+    
+    products = load_products()
+    product = next((p for p in products if p.get("id") == pid), None)
+    
+    if not product:
+        flash("Product not found", "danger")
+        return redirect(url_for("store.admin"))
+    
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        price = request.form.get("price", "")
+        desc = request.form.get("description", "").strip()
+        image_url = request.form.get("image_url", "").strip()
+        category = request.form.get("category", "").strip()
+        
+        # Handle file upload
+        file = request.files.get("image_file")
+        if file and file.filename:
+            if supabase_client:
+                try:
+                    fn = secure_filename(file.filename)
+                    ext = os.path.splitext(fn)[1].lower()
+                    if ext not in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+                        flash("Invalid image format", "danger")
+                    else:
+                        key = f"{uuid.uuid4().hex}{ext}"
+                        file_data = file.read()
+                        
+                        # Upload to Supabase storage
+                        response = supabase_client.storage.from_(SUPABASE_BUCKET).upload(key, file_data)
+                        
+                        # Get public URL
+                        image_url = supabase_client.storage.from_(SUPABASE_BUCKET).get_public_url(key)
+                except Exception as e:
+                    print(f"Upload error: {e}")
+                    flash(f"Upload failed: {str(e)}", "danger")
+            else:
+                # Save locally if no Supabase
+                fn = secure_filename(file.filename)
+                file_path = os.path.join('static', 'uploads', fn)
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                file.save(file_path)
+                image_url = f"/static/uploads/{fn}"
+        
+        # If no new image provided, keep the existing one
+        if not image_url:
+            image_url = product.get('image', '/static/img/placeholder.png')
+        
+        if not name:
+            flash("Product name is required", "danger")
+            return render_template("admin_edit.html", product=product, categories=load_categories())
+        
+        if update_product(pid, name, price, desc, image_url, category):
+            flash("Product updated successfully", "success")
+            if category:
+                return redirect(url_for("store.admin_category", slug=category))
+            return redirect(url_for("store.admin"))
+        else:
+            flash("Failed to update product", "danger")
+    
+    categories = load_categories()
+    return render_template("admin_edit.html", product=product, categories=categories)
 
 @store_bp.route("/admin/delete/<pid>", methods=["POST"])
 def admin_delete_product(pid):
