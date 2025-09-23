@@ -65,6 +65,13 @@ html[data-theme="dark"] {
   --shadow: rgba(0, 0, 0, 0.25);
   --shadow-lg: rgba(0, 0, 0, 0.35);
   --light-bg: #374151;
+
+  /* Map Bootstrap CSS variables to our theme to ensure proper colors */
+  --bs-body-bg: var(--bg);
+  --bs-body-color: var(--fg);
+  --bs-border-color: var(--border);
+  --bs-secondary-color: var(--muted);
+  --bs-tertiary-color: var(--muted);
 }
 
 /* Dark mode overrides for Bootstrap utilities */
@@ -729,12 +736,15 @@ footer {
   z-index: 1055;
 }
 
-.toast {
+/* Custom app toast (avoid Bootstrap .toast default opacity rules) */
+.app-toast {
   background-color: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: 0 8px 25px var(--shadow-lg);
   color: var(--fg);
+  padding: var(--spacing-md);
+  opacity: 1;
 }
 
 /* Cart Animation */
@@ -1123,6 +1133,21 @@ html[data-theme="dark"] .bg-body-tertiary {
 html[data-theme="dark"] .table {
   color: var(--fg) !important;
   --bs-table-bg: var(--card-bg);
+}
+
+/* Ensure admin table text is readable in dark mode */
+html[data-theme="dark"] .table thead th,
+html[data-theme="dark"] .table tbody td,
+html[data-theme="dark"] .table tbody th {
+  color: var(--fg) !important;
+}
+
+/* Ensure cards inherit readable text color in dark */
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .card-body,
+html[data-theme="dark"] .card-header,
+html[data-theme="dark"] .card-footer {
+  color: var(--fg) !important;
 }
 
 html[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > td,
