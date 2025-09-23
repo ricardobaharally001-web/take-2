@@ -4,14 +4,16 @@
     "name": "Classic Tee",
     "price": 25.0,
     "description": "Soft cotton tee in multiple colors.",
-    "image": "static/img/sample1.jpg"
+    "image": "static/img/sample1.jpg",
+    "category": "rug"
   },
   {
     "id": "p1002",
     "name": "Everyday Hoodie",
     "price": 55.0,
     "description": "Cozy hoodie with kangaroo pocket.",
-    "image": "static/img/sample2.jpg"
+    "image": "static/img/sample2.jpg",
+    "category": "rug"
   },
   {
     "id": "p1003",
@@ -33,12 +35,5 @@
     "price": 20.0,
     "description": "Full-grain leather, metal buckle.",
     "image": "static/img/sample5.jpg"
-  },
-  {
-    "id": "p1006",
-    "name": "Canvas Tote",
-    "price": 18.0,
-    "description": "Durable tote for daily errands.",
-    "image": "static/img/sample6.jpg"
   }
 ]
