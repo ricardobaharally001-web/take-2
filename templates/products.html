@@ -5,6 +5,33 @@
     <span class="badge bg-primary">{{ products|length }} items</span>
 </div>
 
+<form class="search-filter-bar mb-4" method="get" action="{{ url_for('store.products') }}">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-6">
+      <label class="form-label">Search</label>
+      <div class="input-group">
+        <input type="text" class="form-control" name="q" value="{{ q or '' }}" placeholder="Search products...">
+        <button type="submit" class="btn btn-outline-primary"><i class="bi bi-search"></i></button>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">Category</label>
+      <select class="form-select" name="category">
+        <option value="">All</option>
+        {% for c in categories or [] %}
+          <option value="{{ c.slug }}" {% if selected_category==c.slug %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel me-1"></i>Filter</button>
+    </div>
+  </div>
+  {% if q or selected_category %}
+  <div class="mt-2"><a href="{{ url_for('store.products') }}" class="btn btn-sm btn-outline-secondary">Clear Filters</a></div>
+  {% endif %}
+  </form>
+
 {% if products %}
 <div class="product-grid">
     {% for p in products %}

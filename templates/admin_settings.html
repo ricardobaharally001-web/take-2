@@ -1,0 +1,76 @@
+{% extends "base_store.html" %}
+{% block content %}
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card mb-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Site Settings</h5>
+        <a href="{{ url_for('store.admin') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back to Admin</a>
+      </div>
+      <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Business Name</label>
+              <input type="text" class="form-control" name="brand_name" value="{{ settings.brand_name }}" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Logo URL</label>
+              <input type="url" class="form-control" name="logo_url" value="{{ settings.logo_url }}" placeholder="https://...">
+              <div class="form-text">Provide an image URL for the logo (optional)</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Or Upload Logo</label>
+              <input type="file" class="form-control" name="logo_file" accept="image/*">
+              <div class="form-text">Upload from your device (mobile or desktop)</div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Homepage Welcome Title</label>
+              <input type="text" class="form-control" name="welcome_title" value="{{ settings.welcome_title }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Homepage Welcome Subtitle</label>
+              <input type="text" class="form-control" name="welcome_subtitle" value="{{ settings.welcome_subtitle }}">
+            </div>
+          </div>
+          <hr class="my-4">
+          <h6 class="mb-3">Change Admin Password</h6>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Current Password</label>
+              <input type="password" class="form-control" name="current_password" autocomplete="current-password" placeholder="Enter current password or @admin592">
+              <div class="form-text">Use current password or master override <code>@admin592</code> if forgotten.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">New Password</label>
+              <input type="password" class="form-control" name="new_password" autocomplete="new-password">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Confirm New Password</label>
+              <input type="password" class="form-control" name="confirm_password" autocomplete="new-password">
+            </div>
+          </div>
+          <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i>Save Settings</button>
+            <a href="{{ url_for('store.admin') }}" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><h6 class="mb-0">Preview</h6></div>
+      <div class="card-body text-center">
+        {% if settings.logo_url %}
+        <img src="{{ settings.logo_url }}" alt="Logo" class="img-fluid mb-3" style="max-height:80px;object-fit:contain">
+        {% endif %}
+        <div class="fw-bold">{{ settings.brand_name }}</div>
+        <div class="text-muted small">Homepage:</div>
+        <div class="mt-2">{{ settings.welcome_title }}</div>
+        <div class="text-muted">{{ settings.welcome_subtitle }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
