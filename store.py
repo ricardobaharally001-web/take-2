@@ -256,9 +256,6 @@ def load_products():
         try:
             response = supabase_client.table('products').select('*').order('created_at', desc=True).execute()
             if response.data:
-                # Fix image URLs for any broken references
-                for product in response.data:
-                    fix_image_url(product)
                 return response.data
         except Exception as e:
             print(f"Error loading from Supabase: {e}")
