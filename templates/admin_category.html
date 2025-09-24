@@ -124,7 +124,7 @@
               {% endif %}
             </td>
             <td>
-              {% set quantity = p.quantity if p.quantity is defined else 0 %}
+              {% set quantity = p.quantity if p.quantity is defined and p.quantity is not none else 0 %}
               {% if quantity > 0 %}
                 <span class="badge bg-success">{{ quantity }} in stock</span>
               {% else %}
