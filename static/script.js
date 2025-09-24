@@ -101,8 +101,23 @@ function addToCart(pid) {
     
     if (productCard) {
         const name = productCard.querySelector('h1, h5, h6')?.textContent || 'Product';
-        const priceText = productCard.querySelector('.price, .price-large')?.textContent || '$0';
+        const priceElement = productCard.querySelector('.price, .price-large');
+        
+        // Check if product has a price
+        if (!priceElement) {
+            showToast('This product requires contact for pricing', 'info');
+            return;
+        }
+        
+        const priceText = priceElement.textContent || '$0';
         const price = parseFloat(priceText.replace('$', ''));
+        
+        // Don't add to cart if price is 0 or invalid
+        if (isNaN(price) || price === 0) {
+            showToast('This product cannot be added to cart', 'warning');
+            return;
+        }
+        
         const image = productCard.querySelector('img')?.src || '/static/img/placeholder.png';
         
         const cart = getCart();
@@ -123,7 +138,7 @@ function addToCart(pid) {
         saveCart(cart);
         
         // Show toast notification
-        showToast('Successfully added to cart!');
+        showToast('Successfully added to cart!', 'success');
 
         // If we're on the cart page, re-render
         renderCart();
@@ -146,6 +161,7 @@ function showToast(message, type = 'info') {
     toast.setAttribute('aria-atomic', 'true');
     const icon = type === 'success' ? 'check-circle text-success'
         : type === 'error' ? 'x-circle text-danger'
+        : type === 'warning' ? 'exclamation-triangle text-warning'
         : 'info-circle text-primary';
     toast.innerHTML = `<div class="d-flex align-items-center gap-2">
         <i class="bi bi-${icon}"></i>
@@ -154,13 +170,13 @@ function showToast(message, type = 'info') {
 
     container.appendChild(toast);
 
-    // Auto-remove after 2 seconds
+    // Auto-remove after 3 seconds
     setTimeout(() => {
         toast.remove();
         if (container.childElementCount === 0) {
             container.remove();
         }
-    }, 2000);
+    }, 3000);
 }
 
 // Render cart page contents if present
@@ -213,60 +229,4 @@ function renderCart() {
             <div class="d-flex justify-content-between"><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
             <div class="d-flex justify-content-between text-muted"><span>Shipping</span><span>$${shipping.toFixed(2)}</span></div>
             <hr>
-            <div class="d-flex justify-content-between fw-bold"><span>Total</span><span>$${total.toFixed(2)}</span></div>
-            ${cart.length > 0 ? '<button class="btn btn-outline-danger w-100 mt-3" onclick="clearCart()"><i class="bi bi-x-circle me-1"></i>Clear Cart</button>' : ''}
-        `;
-        const checkoutBtn = document.getElementById('checkoutBtn');
-        if (checkoutBtn) checkoutBtn.disabled = cart.length === 0;
-    }
-}
-
-function removeFromCart(pid) {
-    let cart = getCart();
-    cart = cart.filter(item => item.id !== pid);
-    saveCart(cart);
-    renderCart();
-}
-
-function changeQty(pid, delta) {
-    const cart = getCart();
-    const item = cart.find(i => i.id === pid);
-    if (item) {
-        item.qty = Math.max(1, item.qty + delta);
-        if (item.qty === 0) {
-            // never reaches due to Math.max, but keep for clarity
-            removeFromCart(pid);
-            return;
-        }
-        saveCart(cart);
-        renderCart();
-    }
-}
-
-function clearCart() {
-    localStorage.setItem('cart', '[]');
-    updateCartCount();
-    renderCart();
-}
-
-// Admin: confirm and delete product (session-based auth)
-async function confirmDelete(pid) {
-    if (!pid) return;
-    if (!confirm('Delete this product?')) return;
-
-    const url = `/admin/delete/${pid}`;
-    try {
-        const resp = await fetch(url, {
-            method: 'POST'
-        });
-        // If not logged in, backend will redirect to login
-        if (resp.redirected) {
-            window.location.href = resp.url;
-            return;
-        }
-        // Otherwise reload to reflect deletion
-        window.location.reload();
-    } catch (e) {
-        showToast('Delete failed', 'error');
-    }
-}
+            <div class="d-flex justify-content-between fw-bold"><span>Total</span><span>$${total.toFixed(2
