@@ -72,6 +72,19 @@
         {% block content %}{% endblock %}
     </main>
 
+    <!-- Ensure theme is applied before paint -->
+    <script>
+    (function() {
+      try {
+        var saved = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', saved);
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+    </script>
+
+
     <!-- Footer -->
     <footer class="footer mt-auto py-4">
         <div class="container text-center">
