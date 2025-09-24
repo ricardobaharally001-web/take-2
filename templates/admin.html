@@ -75,20 +75,18 @@
                         <td>{{ p.name }}</td>
                         <td>
                             {% if p.price is defined %}
-                                ${{ '%.2f'|format(p.price|float) }}
                             {% else %}
                                 <span class="text-muted">No price</span>
                             {% endif %}
                         </td>
                         <td>
-                            {% set quantity = p.quantity if p.quantity is defined else 0 %}
+                            {% set quantity = p.quantity if p.quantity is defined and p.quantity is not none else 0 %}
                             {% if quantity > 0 %}
                                 <span class="badge bg-success">{{ quantity }} in stock</span>
                             {% else %}
                                 <span class="badge bg-danger">Out of stock</span>
                             {% endif %}
                         </td>
-                        <td>{{ p.description[:50] }}...</td>
                         <td>
                             <div class="d-flex gap-2">
                                 <a href="{{ url_for('store.admin_edit_product', pid=p.id) }}" 
