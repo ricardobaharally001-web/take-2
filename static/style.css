@@ -1182,3 +1182,34 @@ html[data-theme="dark"] .form-select:focus {
     --font-size-xl: 1.125rem;
   }
 }
+
+
+/* --- Dark mode fixes for navbar + hamburger (explicit) --- */
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(31,41,55,0.85)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+html[data-theme="dark"] .navbar {
+  background-color: var(--navbar-bg);
+}
+
+html[data-theme="dark"] .navbar .navbar-brand,
+html[data-theme="dark"] .navbar .nav-link {
+  color: var(--fg) !important;
+}
+
+html[data-theme="dark"] .navbar .navbar-toggler {
+  border-color: rgba(255,255,255,0.25);
+}
+
+html[data-theme="dark"] .navbar .navbar-toggler-icon {
+  /* White hamburger for dark mode */
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255,255,255,0.92)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+  filter: none !important;
+}
+
+/* Ensure theme button is visible in dark mode */
+html[data-theme="dark"] .theme-toggle {
+  color: #fff;
+  border-color: rgba(255,255,255,0.25);
+}
