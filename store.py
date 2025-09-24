@@ -282,42 +282,48 @@ def load_products():
                 "name": "Classic Tee",
                 "price": 25.0,
                 "description": "Soft cotton tee in multiple colors.",
-                "image": "https://via.placeholder.com/400x400?text=Classic+Tee"
+                "image": "https://via.placeholder.com/400x400?text=Classic+Tee",
+                "quantity": 15
             },
             {
                 "id": "p1002",
                 "name": "Everyday Hoodie",
                 "price": 55.0,
                 "description": "Cozy hoodie with kangaroo pocket.",
-                "image": "https://via.placeholder.com/400x400?text=Everyday+Hoodie"
+                "image": "https://via.placeholder.com/400x400?text=Everyday+Hoodie",
+                "quantity": 8
             },
             {
                 "id": "p1003",
                 "name": "Slim Jeans",
                 "price": 60.0,
                 "description": "Stretch denim for comfort.",
-                "image": "https://via.placeholder.com/400x400?text=Slim+Jeans"
+                "image": "https://via.placeholder.com/400x400?text=Slim+Jeans",
+                "quantity": 12
             },
             {
                 "id": "p1004",
                 "name": "Running Sneakers",
                 "price": 80.0,
                 "description": "Lightweight, breathable, cushioned.",
-                "image": "https://via.placeholder.com/400x400?text=Running+Sneakers"
+                "image": "https://via.placeholder.com/400x400?text=Running+Sneakers",
+                "quantity": 5
             },
             {
                 "id": "p1005",
                 "name": "Leather Belt",
                 "price": 20.0,
                 "description": "Full-grain leather, metal buckle.",
-                "image": "https://via.placeholder.com/400x400?text=Leather+Belt"
+                "image": "https://via.placeholder.com/400x400?text=Leather+Belt",
+                "quantity": 0
             },
             {
                 "id": "p1006",
                 "name": "Canvas Tote",
                 "price": 18.0,
                 "description": "Durable tote for daily errands.",
-                "image": "https://via.placeholder.com/400x400?text=Canvas+Tote"
+                "image": "https://via.placeholder.com/400x400?text=Canvas+Tote",
+                "quantity": 20
             }
         ]
         save_products(default_products)
@@ -350,7 +356,7 @@ def save_products(products):
         except Exception as e:
             print(f"Error saving to Supabase: {e}")
 
-def add_product(name, price, description, image_url, category=''):
+def add_product(name, price, description, image_url, category='', quantity=0):
     """Add a new product"""
     pid = f"p{uuid.uuid4().hex[:8]}"
     new_product = {
@@ -359,6 +365,7 @@ def add_product(name, price, description, image_url, category=''):
         "description": description,
         "image": image_url,
         "category": category,
+        "quantity": int(quantity) if quantity else 0,
         "created_at": datetime.now().isoformat()
     }
     
@@ -386,7 +393,7 @@ def add_product(name, price, description, image_url, category=''):
     save_products(products)
     return True
 
-def update_product(pid, name, price, description, image_url, category=''):
+def update_product(pid, name, price, description, image_url, category='', quantity=None):
     """Update an existing product"""
     products = load_products()
     product = None
@@ -404,6 +411,13 @@ def update_product(pid, name, price, description, image_url, category=''):
     product['description'] = description
     product['image'] = image_url
     product['category'] = category
+    
+    # Update quantity if provided
+    if quantity is not None:
+        product['quantity'] = int(quantity) if quantity else 0
+    elif 'quantity' not in product:
+        # Set default quantity for existing products without it
+        product['quantity'] = 0
     
     # Handle price - if empty/None, remove price field
     if price and str(price).strip():
@@ -449,6 +463,62 @@ def delete_product(pid):
     save_products(products)
     return True
 
+def get_product_by_id(pid):
+    """Get a single product by ID"""
+    products = load_products()
+    return next((p for p in products if p.get('id') == pid), None)
+
+def check_stock_availability(pid, requested_qty):
+    """Check if requested quantity is available in stock"""
+    product = get_product_by_id(pid)
+    if not product:
+        return False, "Product not found"
+    
+    current_stock = product.get('quantity', 0)
+    if current_stock <= 0:
+        return False, "Product is out of stock"
+    
+    if requested_qty > current_stock:
+        return False, f"Only {current_stock} items available in stock"
+    
+    return True, "Available"
+
+def reduce_stock(pid, quantity):
+    """Reduce stock quantity for a product"""
+    products = load_products()
+    product = None
+    
+    for p in products:
+        if p.get('id') == pid:
+            product = p
+            break
+    
+    if not product:
+        return False, "Product not found"
+    
+    current_stock = product.get('quantity', 0)
+    if current_stock < quantity:
+        return False, f"Insufficient stock. Available: {current_stock}"
+    
+    # Reduce the quantity
+    product['quantity'] = current_stock - quantity
+    
+    # Save the updated products
+    save_products(products)
+    
+    # Update in Supabase if available
+    if supabase_client:
+        try:
+            # Try 'products' first, fall back to 'product'
+            try:
+                supabase_client.table('products').update({'quantity': product['quantity']}).eq('id', pid).execute()
+            except:
+                supabase_client.table('product').update({'quantity': product['quantity']}).eq('id', pid).execute()
+        except Exception as e:
+            print(f"Error updating stock in Supabase: {e}")
+    
+    return True, f"Stock reduced. Remaining: {product['quantity']}"
+
 @store_bp.route("/products")
 def products():
     items = load_products()
@@ -473,10 +543,54 @@ def product_detail(pid):
 def cart():
     return render_template("cart.html")
 
+@store_bp.route("/api/check-stock/<pid>")
+def api_check_stock(pid):
+    """API endpoint to check stock availability for a product"""
+    product = get_product_by_id(pid)
+    if not product:
+        return jsonify({"available": False, "message": "Product not found"}), 404
+    
+    quantity = product.get('quantity', 0)
+    return jsonify({
+        "available": quantity > 0,
+        "quantity": quantity,
+        "message": "In stock" if quantity > 0 else "Out of stock"
+    })
+
 @store_bp.route("/api/cart/checkout", methods=["POST"])
 def checkout():
     payload = request.json or {}
     cart_items = payload.get('cart', [])
+    
+    # Check stock availability for all items first
+    stock_errors = []
+    for item in cart_items:
+        pid = item.get('id')
+        qty = item.get('qty', 1)
+        available, message = check_stock_availability(pid, qty)
+        if not available:
+            product = get_product_by_id(pid)
+            product_name = product.get('name', 'Unknown Product') if product else 'Unknown Product'
+            stock_errors.append(f"{product_name}: {message}")
+    
+    if stock_errors:
+        return jsonify({
+            "ok": False,
+            "message": "Stock check failed",
+            "errors": stock_errors
+        }), 400
+    
+    # Reduce stock for all items
+    for item in cart_items:
+        pid = item.get('id')
+        qty = item.get('qty', 1)
+        success, message = reduce_stock(pid, qty)
+        if not success:
+            # This shouldn't happen if stock check passed, but handle it
+            return jsonify({
+                "ok": False,
+                "message": f"Stock reduction failed: {message}"
+            }), 400
     
     # Here you would integrate with payment gateway
     # For now, just return success
@@ -589,6 +703,7 @@ def admin_add_product():
     desc = request.form.get("description", "").strip()
     image_url = request.form.get("image_url", "").strip()
     category = request.form.get("category", "").strip()
+    quantity = request.form.get("quantity", "0")
     
     # Handle file upload
     file = request.files.get("image_file")
@@ -641,7 +756,7 @@ def admin_add_product():
     if not image_url:
         image_url = "https://via.placeholder.com/400x400?text=No+Image"
     
-    add_product(name, price, desc, image_url, category)
+    add_product(name, price, desc, image_url, category, quantity)
     flash("Product added successfully", "success")
     
     if category:
@@ -666,6 +781,7 @@ def admin_edit_product(pid):
         desc = request.form.get("description", "").strip()
         image_url = request.form.get("image_url", "").strip()
         category = request.form.get("category", "").strip()
+        quantity = request.form.get("quantity")
         
         # Handle file upload
         file = request.files.get("image_file")
@@ -716,7 +832,7 @@ def admin_edit_product(pid):
             flash("Product name is required", "danger")
             return render_template("admin_edit.html", product=product, categories=load_categories())
         
-        if update_product(pid, name, price, desc, image_url, category):
+        if update_product(pid, name, price, desc, image_url, category, quantity):
             flash("Product updated successfully", "success")
             if category:
                 return redirect(url_for("store.admin_category", slug=category))
