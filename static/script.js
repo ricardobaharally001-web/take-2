@@ -229,4 +229,32 @@ function renderCart() {
             <div class="d-flex justify-content-between"><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
             <div class="d-flex justify-content-between text-muted"><span>Shipping</span><span>$${shipping.toFixed(2)}</span></div>
             <hr>
-            <div class="d-flex justify-content-between fw-bold"><span>Total</span><span>$${total.toFixed(2
+            <div class="d-flex justify-content-between fw-bold"><span>Total</span><span>$${total.toFixed(2)}</span></div>
+        `;
+    }
+}
+
+// Change quantity of an item in the cart
+function changeQty(pid, delta) {
+    const cart = getCart();
+    const item = cart.find(i => i.id === pid);
+    if (!item) return;
+    item.qty = Math.max(1, (item.qty || 1) + delta);
+    saveCart(cart);
+    renderCart();
+}
+
+// Remove item entirely from the cart
+function removeFromCart(pid) {
+    let cart = getCart();
+    cart = cart.filter(i => i.id !== pid);
+    saveCart(cart);
+    renderCart();
+}
+
+// Clear the entire cart
+function clearCart() {
+    localStorage.removeItem('cart');
+    updateCartCount();
+    renderCart();
+}
