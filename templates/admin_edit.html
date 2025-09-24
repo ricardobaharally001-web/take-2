@@ -28,7 +28,7 @@
         <div class="col-md-2">
           <label class="form-label">Stock Quantity *</label>
           <input type="number" min="0" class="form-control" name="quantity" 
-                 value="{{ product.quantity if product.quantity is defined else 0 }}" required>
+                 value="{{ product.quantity if product.quantity is defined and product.quantity is not none else 0 }}" required>
           <div class="form-text">0 = Out of stock</div>
         </div>
         <div class="col-md-3">
