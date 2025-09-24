@@ -34,6 +34,25 @@
             </div>
           </div>
           <hr class="my-4">
+          <h6 class="mb-3">WhatsApp Integration</h6>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">WhatsApp Phone Number</label>
+              <div class="input-group">
+                <input type="tel" class="form-control" name="whatsapp_phone" value="{{ settings.whatsapp_phone or '' }}" placeholder="e.g., +1234567890" pattern="^\+[1-9]\d{1,14}$">
+                <button type="button" class="btn btn-outline-danger" id="clearWhatsAppBtn" onclick="clearWhatsAppNumber()" {% if not settings.whatsapp_phone %}style="display: none;"{% endif %}>
+                  <i class="bi bi-trash"></i> Delete
+                </button>
+              </div>
+              <div class="form-text">Enter phone number with country code (e.g., +1234567890). This will be used for WhatsApp checkout integration.</div>
+              {% if settings.whatsapp_phone %}
+              <div class="alert alert-success mt-2">
+                <i class="bi bi-whatsapp me-2"></i>WhatsApp integration is active with number: <strong>{{ settings.whatsapp_phone }}</strong>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          <hr class="my-4">
           <h6 class="mb-3">Change Admin Password</h6>
           <div class="row g-3">
             <div class="col-md-6">
@@ -73,4 +92,26 @@
     </div>
   </div>
 </div>
+
+<script>
+function clearWhatsAppNumber() {
+  if (confirm('Are you sure you want to delete the WhatsApp phone number? This will disable WhatsApp checkout integration.')) {
+    document.querySelector('input[name="whatsapp_phone"]').value = '';
+    document.getElementById('clearWhatsAppBtn').style.display = 'none';
+    document.querySelector('.alert-success').style.display = 'none';
+  }
+}
+
+// Show/hide delete button based on input
+document.querySelector('input[name="whatsapp_phone"]').addEventListener('input', function() {
+  const deleteBtn = document.getElementById('clearWhatsAppBtn');
+  const alertBox = document.querySelector('.alert-success');
+  if (this.value.trim()) {
+    deleteBtn.style.display = 'block';
+  } else {
+    deleteBtn.style.display = 'none';
+    if (alertBox) alertBox.style.display = 'none';
+  }
+});
+</script>
 {% endblock %}
