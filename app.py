@@ -1,42 +1,42 @@
 import os
 from flask import Flask, render_template, request, redirect, url_for, flash
-from supabase_helpers import upload_logo_to_supabase, get_site_setting, set_site_setting
+from supabase_helpers import upload_logo, get_logo_url, set_logo_url, get_products
 
-app = Flask(__name__, static_folder="static", template_folder="templates")
-app.secret_key = os.environ.get("SECRET_KEY", "dev")
+app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY","dev")
 
 @app.context_processor
-def inject_site_logo():
-    try:
-        url = get_site_setting("logo_url")
-    except Exception:
-        url = None
-    return {"SITE_LOGO_URL": url}
+def inject_brand():
+    return {"SITE_LOGO_URL": get_logo_url(), "site_title":"S.B Shop"}
 
 @app.route("/")
 def index():
-    return render_template("base.html", title="Home")
+    return render_template("index.html")
 
-@app.route("/admin/branding", methods=["GET", "POST"])
+@app.route("/products")
+def products():
+    items = get_products()
+    return render_template("products.html", products=items)
+
+@app.route("/cart")
+def cart():
+    return render_template("base.html", title="Cart")
+
+@app.route("/admin/branding", methods=["GET","POST"])
 def admin_branding():
     if request.method == "POST":
-        file = request.files.get("logo")
-        if not file or not file.filename:
-            flash("Please choose an image file.", "danger")
+        f = request.files.get("logo")
+        if not f or not f.filename:
+            flash("Please choose an image file.","danger")
             return redirect(url_for("admin_branding"))
         try:
-            url = upload_logo_to_supabase(file)
-            set_site_setting("logo_url", url)
-            flash("Logo updated!", "success")
+            url = upload_logo(f)
+            set_logo_url(url)
+            flash("Logo updated!","success")
         except Exception as e:
             flash(f"Upload failed: {e}", "danger")
         return redirect(url_for("admin_branding"))
-    try:
-        current_logo = get_site_setting("logo_url")
-    except Exception as e:
-        current_logo = None
-        flash(f"Supabase not configured yet: {e}", "warning")
-    return render_template("admin_branding.html", current_logo=current_logo)
+    return render_template("admin_branding.html", current_logo=get_logo_url())
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", "5000")))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT","5000")), debug=True)
