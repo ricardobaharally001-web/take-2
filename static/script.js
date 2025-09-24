@@ -42,13 +42,27 @@ function initPage() {
             try {
                 const resp = await axios.post('/api/cart/checkout', { cart });
                 if (resp.data && resp.data.ok) {
-                    showToast(resp.data.message || 'Order placed!');
+                    showToast(resp.data.message || 'Order placed!', 'success');
                     clearCart();
                 } else {
-                    showToast('Checkout failed');
+                    const errorMsg = resp.data?.message || 'Checkout failed';
+                    if (resp.data?.errors) {
+                        showToast(`${errorMsg}: ${resp.data.errors.join(', ')}`, 'error');
+                    } else {
+                        showToast(errorMsg, 'error');
+                    }
                 }
             } catch (e) {
-                showToast('Checkout error');
+                if (e.response && e.response.data) {
+                    const errorMsg = e.response.data.message || 'Checkout error';
+                    if (e.response.data.errors) {
+                        showToast(`${errorMsg}: ${e.response.data.errors.join(', ')}`, 'error');
+                    } else {
+                        showToast(errorMsg, 'error');
+                    }
+                } else {
+                    showToast('Checkout error', 'error');
+                }
             } finally {
                 checkoutBtn.disabled = getCart().length === 0;
                 checkoutBtn.innerHTML = originalText;
@@ -95,7 +109,33 @@ function updateCartCount() {
     }
 }
 
-function addToCart(pid) {
+async function addToCart(pid) {
+    // Check stock availability first
+    try {
+        const response = await fetch(`/api/check-stock/${pid}`);
+        const stockData = await response.json();
+        
+        if (!stockData.available) {
+            showToast('This product is out of stock', 'error');
+            return;
+        }
+        
+        // Check if we already have this item in cart and if adding one more would exceed stock
+        const cart = getCart();
+        const existing = cart.find(item => item.id === pid);
+        const currentCartQty = existing ? existing.qty : 0;
+        
+        if (currentCartQty >= stockData.quantity) {
+            showToast(`Cannot add more items. Only ${stockData.quantity} available in stock`, 'warning');
+            return;
+        }
+        
+    } catch (error) {
+        console.error('Stock check failed:', error);
+        showToast('Unable to check stock availability', 'error');
+        return;
+    }
+    
     // Get product data from the page or fetch it
     const productCard = document.querySelector(`[onclick="addToCart('${pid}')"]`).closest('.product-card, .row');
     
@@ -236,11 +276,31 @@ function renderCart() {
 }
 
 // Change quantity of an item in the cart
-function changeQty(pid, delta) {
+async function changeQty(pid, delta) {
     const cart = getCart();
     const item = cart.find(i => i.id === pid);
     if (!item) return;
-    item.qty = Math.max(1, (item.qty || 1) + delta);
+    
+    const newQty = Math.max(1, (item.qty || 1) + delta);
+    
+    // If increasing quantity, check stock availability
+    if (delta > 0) {
+        try {
+            const response = await fetch(`/api/check-stock/${pid}`);
+            const stockData = await response.json();
+            
+            if (newQty > stockData.quantity) {
+                showToast(`Cannot add more items. Only ${stockData.quantity} available in stock`, 'warning');
+                return;
+            }
+        } catch (error) {
+            console.error('Stock check failed:', error);
+            showToast('Unable to check stock availability', 'error');
+            return;
+        }
+    }
+    
+    item.qty = newQty;
     saveCart(cart);
     renderCart();
 }
