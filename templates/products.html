@@ -45,7 +45,7 @@
             <p class="text-muted small">{{ p.description[:50] }}...</p>
             {% if p.price is defined %}
                 <p class="price">${{ '%.2f'|format(p.price|float) }}</p>
-                {% set quantity = p.quantity if p.quantity is defined else 0 %}
+                {% set quantity = p.quantity if p.quantity is defined and p.quantity is not none else 0 %}
                 {% if quantity > 0 %}
                     <p class="stock-status text-success small">
                         <i class="bi bi-check-circle"></i> {{ quantity }} in stock
@@ -63,7 +63,7 @@
                     View Details
                 </a>
                 {% if p.price is defined %}
-                    {% set quantity = p.quantity if p.quantity is defined else 0 %}
+                    {% set quantity = p.quantity if p.quantity is defined and p.quantity is not none else 0 %}
                     {% if quantity > 0 %}
                         <button class="btn btn-primary" onclick="addToCart('{{ p.id }}')">
                             <i class="bi bi-cart-plus me-1"></i>Add to Cart
