@@ -110,11 +110,12 @@ function addToCart(pid) {
         }
         
         const priceText = priceElement.textContent || '$0';
-        const price = parseFloat(priceText.replace('$', ''));
+        // Strip currency symbols and thousand separators for robust parsing
+        const price = parseFloat(priceText.replace(/[^0-9.]/g, ''));
         
-        // Don't add to cart if price is 0 or invalid
-        if (isNaN(price) || price === 0) {
-            showToast('This product cannot be added to cart', 'warning');
+        // Don't add to cart if price is invalid or not positive
+        if (isNaN(price) || price <= 0) {
+            showToast('This product requires contact for pricing', 'info');
             return;
         }
         
