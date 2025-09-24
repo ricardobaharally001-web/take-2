@@ -36,7 +36,10 @@
 <div class="product-grid">
     {% for p in products %}
     <div class="product-card">
-        <img src="{{ p.image }}" alt="{{ p.name }}" class="card-img-top">
+        <img src="{{ p.image }}" 
+             alt="{{ p.name }}" 
+             class="card-img-top"
+             onerror="this.onerror=null; this.src='https://via.placeholder.com/400x400?text=No+Image';">
         <div class="card-body">
             <h5 class="card-title">{{ p.name }}</h5>
             <p class="text-muted small">{{ p.description[:50] }}...</p>
