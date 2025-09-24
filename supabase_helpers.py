@@ -7,8 +7,8 @@ SUPABASE_ASSETS_BUCKET = os.environ.get("SUPABASE_ASSETS_BUCKET", "assets")
 
 def _get_env():
     url = os.environ.get("SUPABASE_URL")
-    # accept either ANON or SERVICE ROLE (whichever you already use elsewhere)
-    key = os.environ.get("SUPABASE_ANON_KEY") or os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+    # Prefer SERVICE ROLE for server-side writes; fall back to ANON if needed
+    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_ANON_KEY")
     return url, key
 
 _supabase_client = None
@@ -93,12 +93,83 @@ def upload_logo_to_supabase(file_storage) -> str:
     return _public_url(SUPABASE_ASSETS_BUCKET, key)
 
 def get_site_setting(key: str) -> str | None:
+    """Return a site setting value, supporting multiple schema variants.
+
+    We support:
+    1) Key/Value table: site_settings(key text primary key, value text)
+    2) Single-row config table: site_settings has a dedicated column, e.g. site_settings.logo_url
+    3) Legacy table name: settings
+    """
     client = _get_client()
-    res = client.table("site_settings").select("value").eq("key", key).limit(1).execute()
-    if res.data:
-        return res.data[0]["value"]
+    # Variant 1: key/value
+    try:
+        res = client.table("site_settings").select("value").eq("key", key).limit(1).execute()
+        if res.data:
+            return res.data[0].get("value")
+    except Exception:
+        pass
+
+    # Variant 2: dedicated column on site_settings
+    try:
+        res = client.table("site_settings").select(key).limit(1).execute()
+        if res.data and res.data[0].get(key):
+            return res.data[0].get(key)
+    except Exception:
+        pass
+
+    # Variant 3: dedicated column on settings
+    try:
+        res = client.table("settings").select(key).limit(1).execute()
+        if res.data and res.data[0].get(key):
+            return res.data[0].get(key)
+    except Exception:
+        pass
     return None
 
 def set_site_setting(key: str, value: str):
+    """Persist a site setting, supporting multiple schema variants.
+
+    Attempts in order:
+    1) Upsert into key/value table site_settings(key,value)
+    2) Update first row in site_settings setting a dedicated column; create row if none
+    3) Update first row in settings table similarly
+    """
     client = _get_client()
-    client.table("site_settings").upsert({"key": key, "value": value}).execute()
+    # Variant 1: key/value table
+    try:
+        client.table("site_settings").upsert({"key": key, "value": value}).execute()
+        return
+    except Exception:
+        pass
+
+    # Variant 2: dedicated column on site_settings
+    try:
+        # Try update existing row
+        res = client.table("site_settings").select("id").limit(1).execute()
+        if res.data:
+            row_id = res.data[0].get("id")
+            if row_id is not None:
+                client.table("site_settings").update({key: value}).eq("id", row_id).execute()
+            else:
+                # No id column; do an update without filter (affects all rows)
+                client.table("site_settings").update({key: value}).execute()
+        else:
+            # Insert a new row with the column
+            client.table("site_settings").insert({key: value}).execute()
+        return
+    except Exception:
+        pass
+
+    # Variant 3: dedicated column on settings
+    try:
+        res = client.table("settings").select("id").limit(1).execute()
+        if res.data:
+            row_id = res.data[0].get("id")
+            if row_id is not None:
+                client.table("settings").update({key: value}).eq("id", row_id).execute()
+            else:
+                client.table("settings").update({key: value}).execute()
+        else:
+            client.table("settings").insert({key: value}).execute()
+    except Exception:
+        pass
