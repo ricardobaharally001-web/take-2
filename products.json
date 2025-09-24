@@ -40,5 +40,13 @@
     "description": "Full-grain leather, metal buckle.",
     "image": "static/img/sample5.jpg",
     "quantity": 0
+  },
+  {
+    "id": "p1006",
+    "name": "Canvas Tote",
+    "price": 18.0,
+    "description": "Durable tote for daily errands.",
+    "image": "https://via.placeholder.com/400x400?text=Canvas+Tote",
+    "quantity": 20
   }
 ]
