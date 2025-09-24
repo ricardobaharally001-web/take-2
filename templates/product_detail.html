@@ -19,9 +19,16 @@
         <h1>{{ product.name }}</h1>
         {% if product.price is defined %}
             <p class="price-large">${{ '%.2f'|format(product.price|float) }}</p>
-            <p class="stock-indicator in-stock">
-                <i class="bi bi-check-circle"></i> In Stock
-            </p>
+            {% set quantity = product.quantity if product.quantity is defined else 0 %}
+            {% if quantity > 0 %}
+                <p class="stock-indicator in-stock">
+                    <i class="bi bi-check-circle"></i> In Stock ({{ quantity }} available)
+                </p>
+            {% else %}
+                <p class="stock-indicator out-of-stock">
+                    <i class="bi bi-x-circle"></i> Out of Stock
+                </p>
+            {% endif %}
         {% else %}
             <p class="text-muted lead">Contact for pricing</p>
         {% endif %}
@@ -29,9 +36,16 @@
         
         <div class="d-grid gap-2 d-md-block">
             {% if product.price is defined %}
-                <button class="btn btn-primary btn-lg" onclick="addToCart('{{ product.id }}')">
-                    <i class="bi bi-cart-plus me-2"></i>Add to Cart
-                </button>
+                {% set quantity = product.quantity if product.quantity is defined else 0 %}
+                {% if quantity > 0 %}
+                    <button class="btn btn-primary btn-lg" onclick="addToCart('{{ product.id }}')">
+                        <i class="bi bi-cart-plus me-2"></i>Add to Cart
+                    </button>
+                {% else %}
+                    <button class="btn btn-secondary btn-lg" disabled>
+                        <i class="bi bi-x-circle me-2"></i>Out of Stock
+                    </button>
+                {% endif %}
             {% else %}
                 <button class="btn btn-secondary btn-lg" disabled>
                     <i class="bi bi-info-circle me-2"></i>Contact for Purchase
