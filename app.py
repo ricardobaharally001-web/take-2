@@ -1,41 +1,31 @@
 import os
-from flask import Flask, render_template, send_from_directory
-from dotenv import load_dotenv
+from flask import Flask, render_template, request, redirect, url_for, flash
+from supabase_helpers import upload_logo_to_supabase, get_site_setting, set_site_setting
 
-# Load env in local dev; on Render, env is injected
-load_dotenv()
+app = Flask(__name__, static_folder="static", template_folder="templates")
+app.secret_key = os.environ.get("SECRET_KEY", "dev")
 
-def create_app():
-    app = Flask(__name__, static_folder="static", template_folder="templates")
-    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+@app.context_processor
+def inject_site_logo():
+    return {"SITE_LOGO_URL": get_site_setting("logo_url")}
 
-    # Register blueprints
-    from store import store_bp
-    app.register_blueprint(store_bp)
+@app.route("/")
+def index():
+    return render_template("base.html", title="Home")
 
-    @app.route("/health")
-    def health():
-        return {"status": "ok"}
-
-    # Index route (landing)
-    @app.route("/")
-    def index():
-        # A simple curated selection on home
-        from store import load_products
-        products = load_products()[:6]
-        return render_template("index.html", products=products)
-
-    # Favicon (optional)
-    @app.route('/favicon.ico')
-    def favicon():
-        return send_from_directory(os.path.join(app.root_path, 'static'),
-                                   'favicon.ico', mimetype='image/vnd.microsoft.icon')
-
-    return app
-
-# Create app instance at module level
-app = create_app()
+@app.route("/admin/branding", methods=["GET", "POST"])
+def admin_branding():
+    if request.method == "POST":
+        file = request.files.get("logo")
+        if not file or not file.filename:
+            flash("Please choose an image file.", "danger")
+            return redirect(url_for("admin_branding"))
+        url = upload_logo_to_supabase(file)
+        set_site_setting("logo_url", url)
+        flash("Logo updated!", "success")
+        return redirect(url_for("admin_branding"))
+    current_logo = get_site_setting("logo_url")
+    return render_template("admin_branding.html", current_logo=current_logo)
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "5000"))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", "5000")))
