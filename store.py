@@ -28,6 +28,12 @@ DATA_FILE = os.path.join(BASE_DIR, "products.json")
 SETTINGS_FILE = os.path.join(BASE_DIR, "settings.json")
 CATEGORIES_FILE = os.path.join(BASE_DIR, "categories.json")
 
+# Ensure upload directories exist
+UPLOAD_DIR = os.path.join(BASE_DIR, 'static', 'uploads')
+IMG_DIR = os.path.join(BASE_DIR, 'static', 'img')
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(IMG_DIR, exist_ok=True)
+
 DEFAULT_SETTINGS = {
     "brand_name": "S.B Shop",
     "logo_url": "",
@@ -35,6 +41,23 @@ DEFAULT_SETTINGS = {
     "welcome_subtitle": "Discover our curated collection of premium products",
     "admin_password": os.getenv("ADMIN_PASSWORD", "admin123"),
 }
+
+def get_safe_image_url(image_path):
+    """Ensure image URL is valid or return placeholder"""
+    if not image_path:
+        return "https://via.placeholder.com/400x400?text=No+Image"
+    
+    # If it's a local static file reference, check if it exists
+    if image_path.startswith('/static/'):
+        static_path = os.path.join(BASE_DIR, image_path[1:])  # Remove leading slash
+        if not os.path.exists(static_path):
+            return "https://via.placeholder.com/400x400?text=No+Image"
+    elif image_path.startswith('static/'):
+        static_path = os.path.join(BASE_DIR, image_path)
+        if not os.path.exists(static_path):
+            return "https://via.placeholder.com/400x400?text=No+Image"
+    
+    return image_path
 
 def load_settings():
     """Load site settings from file or defaults"""
@@ -140,67 +163,77 @@ def load_products():
             try:
                 response = supabase_client.table('products').select('*').order('created_at', desc=True).execute()
                 if response.data:
+                    # Fix image URLs for any broken references
+                    for product in response.data:
+                        product['image'] = get_safe_image_url(product.get('image', ''))
                     return response.data
             except:
                 # Fallback to singular 'product' table
                 response = supabase_client.table('product').select('*').order('created_at', desc=True).execute()
                 if response.data:
+                    # Fix image URLs for any broken references
+                    for product in response.data:
+                        product['image'] = get_safe_image_url(product.get('image', ''))
                     return response.data
         except Exception as e:
             print(f"Error loading from Supabase: {e}")
     
     # Fallback to local file
     if not os.path.exists(DATA_FILE):
-        # Create default products
+        # Create default products with working placeholder images
         default_products = [
             {
                 "id": "p1001",
                 "name": "Classic Tee",
                 "price": 25.0,
                 "description": "Soft cotton tee in multiple colors.",
-                "image": "/static/img/sample1.jpg"
+                "image": "https://via.placeholder.com/400x400?text=Classic+Tee"
             },
             {
                 "id": "p1002",
                 "name": "Everyday Hoodie",
                 "price": 55.0,
                 "description": "Cozy hoodie with kangaroo pocket.",
-                "image": "/static/img/sample2.jpg"
+                "image": "https://via.placeholder.com/400x400?text=Everyday+Hoodie"
             },
             {
                 "id": "p1003",
                 "name": "Slim Jeans",
                 "price": 60.0,
                 "description": "Stretch denim for comfort.",
-                "image": "/static/img/sample3.jpg"
+                "image": "https://via.placeholder.com/400x400?text=Slim+Jeans"
             },
             {
                 "id": "p1004",
                 "name": "Running Sneakers",
                 "price": 80.0,
                 "description": "Lightweight, breathable, cushioned.",
-                "image": "/static/img/sample4.jpg"
+                "image": "https://via.placeholder.com/400x400?text=Running+Sneakers"
             },
             {
                 "id": "p1005",
                 "name": "Leather Belt",
                 "price": 20.0,
                 "description": "Full-grain leather, metal buckle.",
-                "image": "/static/img/sample5.jpg"
+                "image": "https://via.placeholder.com/400x400?text=Leather+Belt"
             },
             {
                 "id": "p1006",
                 "name": "Canvas Tote",
                 "price": 18.0,
                 "description": "Durable tote for daily errands.",
-                "image": "/static/img/sample6.jpg"
+                "image": "https://via.placeholder.com/400x400?text=Canvas+Tote"
             }
         ]
         save_products(default_products)
         return default_products
     
     with open(DATA_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+        products = json.load(f)
+        # Fix image URLs for any broken references
+        for product in products:
+            product['image'] = get_safe_image_url(product.get('image', ''))
+        return products
 
 def save_products(products):
     """Save products to Supabase and local file"""
@@ -406,11 +439,11 @@ def admin_settings():
                 if ext not in ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg']:
                     flash("Invalid logo image format", "danger")
                 else:
-                    upload_dir = os.path.join('static', 'uploads')
-                    os.makedirs(upload_dir, exist_ok=True)
-                    dest = os.path.join(upload_dir, f"logo_{uuid.uuid4().hex[:8]}{ext}")
+                    os.makedirs(UPLOAD_DIR, exist_ok=True)
+                    dest = os.path.join(UPLOAD_DIR, f"logo_{uuid.uuid4().hex[:8]}{ext}")
                     logo_file.save(dest)
-                    settings["logo_url"] = f"/{dest}"
+                    # Convert to relative path for URL
+                    settings["logo_url"] = f"/static/uploads/{os.path.basename(dest)}"
             except Exception as e:
                 flash(f"Logo upload failed: {e}", "danger")
         else:
@@ -458,7 +491,8 @@ def admin_add_product():
                 fn = secure_filename(file.filename)
                 ext = os.path.splitext(fn)[1].lower()
                 if ext not in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
-                    return jsonify({"error": "Invalid image format"}), 400
+                    flash("Invalid image format", "danger")
+                    return redirect(request.referrer or url_for("store.admin"))
                 
                 key = f"{uuid.uuid4().hex}{ext}"
                 file_data = file.read()
@@ -470,21 +504,35 @@ def admin_add_product():
                 image_url = supabase_client.storage.from_(SUPABASE_BUCKET).get_public_url(key)
             except Exception as e:
                 print(f"Upload error: {e}")
-                return jsonify({"error": f"Upload failed: {str(e)}"}), 500
+                flash(f"Upload failed: {str(e)}", "danger")
+                # Fall back to local upload
+                try:
+                    fn = secure_filename(file.filename)
+                    os.makedirs(UPLOAD_DIR, exist_ok=True)
+                    file_path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4().hex[:8]}_{fn}")
+                    file.save(file_path)
+                    image_url = f"/static/uploads/{os.path.basename(file_path)}"
+                except Exception as local_e:
+                    print(f"Local upload error: {local_e}")
+                    image_url = "https://via.placeholder.com/400x400?text=Upload+Failed"
         else:
             # Save locally if no Supabase
-            fn = secure_filename(file.filename)
-            file_path = os.path.join('static', 'uploads', fn)
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
-            file.save(file_path)
-            image_url = f"/static/uploads/{fn}"
+            try:
+                fn = secure_filename(file.filename)
+                os.makedirs(UPLOAD_DIR, exist_ok=True)
+                file_path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4().hex[:8]}_{fn}")
+                file.save(file_path)
+                image_url = f"/static/uploads/{os.path.basename(file_path)}"
+            except Exception as e:
+                print(f"Local upload error: {e}")
+                image_url = "https://via.placeholder.com/400x400?text=Upload+Failed"
     
     if not name:
         flash("Product name is required", "danger")
         return redirect(request.referrer or url_for("store.admin"))
     
     if not image_url:
-        image_url = "/static/img/placeholder.png"
+        image_url = "https://via.placeholder.com/400x400?text=No+Image"
     
     add_product(name, price, desc, image_url, category)
     flash("Product added successfully", "success")
@@ -533,17 +581,29 @@ def admin_edit_product(pid):
                 except Exception as e:
                     print(f"Upload error: {e}")
                     flash(f"Upload failed: {str(e)}", "danger")
+                    # Fall back to local upload
+                    try:
+                        fn = secure_filename(file.filename)
+                        os.makedirs(UPLOAD_DIR, exist_ok=True)
+                        file_path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4().hex[:8]}_{fn}")
+                        file.save(file_path)
+                        image_url = f"/static/uploads/{os.path.basename(file_path)}"
+                    except Exception as local_e:
+                        print(f"Local upload error: {local_e}")
             else:
                 # Save locally if no Supabase
-                fn = secure_filename(file.filename)
-                file_path = os.path.join('static', 'uploads', fn)
-                os.makedirs(os.path.dirname(file_path), exist_ok=True)
-                file.save(file_path)
-                image_url = f"/static/uploads/{fn}"
+                try:
+                    fn = secure_filename(file.filename)
+                    os.makedirs(UPLOAD_DIR, exist_ok=True)
+                    file_path = os.path.join(UPLOAD_DIR, f"{uuid.uuid4().hex[:8]}_{fn}")
+                    file.save(file_path)
+                    image_url = f"/static/uploads/{os.path.basename(file_path)}"
+                except Exception as e:
+                    print(f"Local upload error: {e}")
         
         # If no new image provided, keep the existing one
         if not image_url:
-            image_url = product.get('image', '/static/img/placeholder.png')
+            image_url = product.get('image', 'https://via.placeholder.com/400x400?text=No+Image')
         
         if not name:
             flash("Product name is required", "danger")
