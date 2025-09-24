@@ -5,7 +5,8 @@
     "price": 25.0,
     "description": "Soft cotton tee in multiple colors.",
     "image": "static/img/sample1.jpg",
-    "category": "rug"
+    "category": "rug",
+    "quantity": 15
   },
   {
     "id": "p1002",
@@ -13,27 +14,31 @@
     "price": 55.0,
     "description": "Cozy hoodie with kangaroo pocket.",
     "image": "static/img/sample2.jpg",
-    "category": "rug"
+    "category": "rug",
+    "quantity": 8
   },
   {
     "id": "p1003",
     "name": "Slim Jeans",
     "price": 60.0,
     "description": "Stretch denim for comfort.",
-    "image": "static/img/sample3.jpg"
+    "image": "static/img/sample3.jpg",
+    "quantity": 12
   },
   {
     "id": "p1004",
     "name": "Running Sneakers",
     "price": 80.0,
     "description": "Lightweight, breathable, cushioned.",
-    "image": "static/img/sample4.jpg"
+    "image": "static/img/sample4.jpg",
+    "quantity": 5
   },
   {
     "id": "p1005",
     "name": "Leather Belt",
     "price": 20.0,
     "description": "Full-grain leather, metal buckle.",
-    "image": "static/img/sample5.jpg"
+    "image": "static/img/sample5.jpg",
+    "quantity": 0
   }
 ]
