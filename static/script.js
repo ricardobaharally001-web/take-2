@@ -36,36 +36,24 @@ function initPage() {
         checkoutBtn.addEventListener('click', async () => {
             const cart = getCart();
             if (!cart.length) return;
-            checkoutBtn.disabled = true;
-            const originalText = checkoutBtn.innerHTML;
-            checkoutBtn.innerHTML = '<span class="loading-spinner me-2"></span>Processing...';
+            
+            // Check if WhatsApp integration is enabled
             try {
-                const resp = await axios.post('/api/cart/checkout', { cart });
-                if (resp.data && resp.data.ok) {
-                    showToast(resp.data.message || 'Order placed!', 'success');
-                    clearCart();
+                const whatsappResp = await fetch('/api/whatsapp-settings');
+                const whatsappData = await whatsappResp.json();
+                
+                if (whatsappData.whatsapp_enabled) {
+                    // Show customer name popup
+                    const customerName = await showCustomerNameModal();
+                    if (!customerName) return; // User cancelled
+                    
+                    await processCheckout(cart, customerName);
                 } else {
-                    const errorMsg = resp.data?.message || 'Checkout failed';
-                    if (resp.data?.errors) {
-                        showToast(`${errorMsg}: ${resp.data.errors.join(', ')}`, 'error');
-                    } else {
-                        showToast(errorMsg, 'error');
-                    }
+                    await processCheckout(cart);
                 }
             } catch (e) {
-                if (e.response && e.response.data) {
-                    const errorMsg = e.response.data.message || 'Checkout error';
-                    if (e.response.data.errors) {
-                        showToast(`${errorMsg}: ${e.response.data.errors.join(', ')}`, 'error');
-                    } else {
-                        showToast(errorMsg, 'error');
-                    }
-                } else {
-                    showToast('Checkout error', 'error');
-                }
-            } finally {
-                checkoutBtn.disabled = getCart().length === 0;
-                checkoutBtn.innerHTML = originalText;
+                console.error('Error checking WhatsApp settings:', e);
+                await processCheckout(cart);
             }
         });
     }
@@ -318,4 +306,148 @@ function clearCart() {
     localStorage.removeItem('cart');
     updateCartCount();
     renderCart();
+}
+
+// Show customer name modal for WhatsApp checkout
+function showCustomerNameModal() {
+    return new Promise((resolve) => {
+        // Create modal HTML
+        const modalHtml = `
+            <div class="modal fade" id="customerNameModal" tabindex="-1" aria-labelledby="customerNameModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="customerNameModalLabel">
+                                <i class="bi bi-whatsapp text-success me-2"></i>WhatsApp Checkout
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Your order will be sent via WhatsApp. Please enter your full name:</p>
+                            <div class="mb-3">
+                                <label for="customerNameInput" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="customerNameInput" placeholder="Enter your full name" required>
+                                <div class="form-text">This name will be included in your order details.</div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-success" id="proceedWhatsAppBtn">
+                                <i class="bi bi-whatsapp me-1"></i>Proceed to WhatsApp
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Remove existing modal if any
+        const existingModal = document.getElementById('customerNameModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // Add modal to page
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        const modal = document.getElementById('customerNameModal');
+        const nameInput = document.getElementById('customerNameInput');
+        const proceedBtn = document.getElementById('proceedWhatsAppBtn');
+        
+        // Show modal
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+        
+        // Focus on input
+        modal.addEventListener('shown.bs.modal', () => {
+            nameInput.focus();
+        });
+        
+        // Handle proceed button
+        proceedBtn.addEventListener('click', () => {
+            const name = nameInput.value.trim();
+            if (!name) {
+                nameInput.classList.add('is-invalid');
+                return;
+            }
+            bsModal.hide();
+            resolve(name);
+        });
+        
+        // Handle enter key
+        nameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                proceedBtn.click();
+            }
+        });
+        
+        // Handle input validation
+        nameInput.addEventListener('input', () => {
+            nameInput.classList.remove('is-invalid');
+        });
+        
+        // Handle modal close
+        modal.addEventListener('hidden.bs.modal', () => {
+            modal.remove();
+            if (!nameInput.value.trim()) {
+                resolve(null); // User cancelled
+            }
+        });
+    });
+}
+
+// Process checkout with optional customer name
+async function processCheckout(cart, customerName = null) {
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    if (!checkoutBtn) return;
+    
+    checkoutBtn.disabled = true;
+    const originalText = checkoutBtn.innerHTML;
+    checkoutBtn.innerHTML = '<span class="loading-spinner me-2"></span>Processing...';
+    
+    try {
+        const payload = { cart };
+        if (customerName) {
+            payload.customer_name = customerName;
+        }
+        
+        const resp = await fetch('/api/cart/checkout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await resp.json();
+        
+        if (data && data.ok) {
+            if (data.use_whatsapp && data.whatsapp_url) {
+                // Redirect to WhatsApp
+                showToast(data.message || 'Redirecting to WhatsApp...', 'success');
+                clearCart();
+                
+                // Small delay to show the toast, then redirect
+                setTimeout(() => {
+                    window.open(data.whatsapp_url, '_blank');
+                }, 1000);
+            } else {
+                showToast(data.message || 'Order placed!', 'success');
+                clearCart();
+            }
+        } else {
+            const errorMsg = data?.message || 'Checkout failed';
+            if (data?.errors) {
+                showToast(`${errorMsg}: ${data.errors.join(', ')}`, 'error');
+            } else {
+                showToast(errorMsg, 'error');
+            }
+        }
+    } catch (e) {
+        console.error('Checkout error:', e);
+        showToast('Checkout error. Please try again.', 'error');
+    } finally {
+        checkoutBtn.disabled = getCart().length === 0;
+        checkoutBtn.innerHTML = originalText;
+    }
 }
