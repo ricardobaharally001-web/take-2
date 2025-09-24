@@ -4,6 +4,17 @@ import uuid
 from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, abort, flash, session
 from werkzeug.utils import secure_filename
+try:
+    # Optional imports: used to store and read a hosted logo URL in Supabase
+    from supabase_helpers import (
+        get_site_setting as _sb_get_site_setting,
+        set_site_setting as _sb_set_site_setting,
+        upload_logo_to_supabase as _sb_upload_logo,
+    )
+except Exception:
+    _sb_get_site_setting = None
+    _sb_set_site_setting = None
+    _sb_upload_logo = None
 
 # Supabase configuration (server-side only; keep out of templates)
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip()
@@ -67,10 +78,27 @@ def load_settings():
                 data = json.load(f)
                 # ensure missing keys filled
                 merged = {**DEFAULT_SETTINGS, **data}
+                # If Supabase has a hosted logo URL, prefer it to avoid losing logo on redeploy
+                if _sb_get_site_setting:
+                    try:
+                        hosted_logo = _sb_get_site_setting("logo_url")
+                        if hosted_logo:
+                            merged["logo_url"] = hosted_logo
+                    except Exception:
+                        pass
                 return merged
     except Exception as e:
         print(f"Error reading settings: {e}")
-    return DEFAULT_SETTINGS.copy()
+    # Fall back to defaults, optionally overlay hosted logo
+    defaults = DEFAULT_SETTINGS.copy()
+    if _sb_get_site_setting:
+        try:
+            hosted_logo = _sb_get_site_setting("logo_url")
+            if hosted_logo:
+                defaults["logo_url"] = hosted_logo
+        except Exception:
+            pass
+    return defaults
 
 def save_settings(settings):
     try:
@@ -430,7 +458,7 @@ def admin_settings():
     if request.method == "POST":
         settings = load_settings()
         settings["brand_name"] = request.form.get("brand_name", settings["brand_name"]).strip()
-        # Handle logo upload if provided
+        # Handle logo upload if provided — prefer Supabase storage
         logo_file = request.files.get("logo_file")
         if logo_file and logo_file.filename:
             try:
@@ -439,14 +467,26 @@ def admin_settings():
                 if ext not in ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg']:
                     flash("Invalid logo image format", "danger")
                 else:
-                    os.makedirs(UPLOAD_DIR, exist_ok=True)
-                    dest = os.path.join(UPLOAD_DIR, f"logo_{uuid.uuid4().hex[:8]}{ext}")
-                    logo_file.save(dest)
-                    # Convert to relative path for URL
-                    settings["logo_url"] = f"/static/uploads/{os.path.basename(dest)}"
+                    if _sb_upload_logo:
+                        # Upload to Supabase `assets` bucket and store public URL
+                        public_url = _sb_upload_logo(logo_file)
+                        settings["logo_url"] = public_url
+                        if _sb_set_site_setting:
+                            try:
+                                _sb_set_site_setting("logo_url", public_url)
+                            except Exception:
+                                pass
+                        flash("Logo uploaded to cloud storage", "success")
+                    else:
+                        # Fallback to local upload
+                        os.makedirs(UPLOAD_DIR, exist_ok=True)
+                        dest = os.path.join(UPLOAD_DIR, f"logo_{uuid.uuid4().hex[:8]}{ext}")
+                        logo_file.save(dest)
+                        settings["logo_url"] = f"/static/uploads/{os.path.basename(dest)}"
             except Exception as e:
                 flash(f"Logo upload failed: {e}", "danger")
         else:
+            # If a direct URL was provided, keep it
             settings["logo_url"] = request.form.get("logo_url", settings.get("logo_url", "")).strip()
         settings["welcome_title"] = request.form.get("welcome_title", settings["welcome_title"]).strip()
         settings["welcome_subtitle"] = request.form.get("welcome_subtitle", settings["welcome_subtitle"]).strip()
