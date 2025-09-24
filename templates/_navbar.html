@@ -1,0 +1,58 @@
+<nav class="navbar navbar-expand-lg border-bottom" style="background: var(--nav-bg, #f8f9fa);">
+  <div class="container-fluid px-3">
+    <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+      <img src="{{ SITE_LOGO_URL or url_for('static', filename='img/logo.svg') }}"
+           alt="S.B Shop" style="height:28px;width:auto;">
+      <span class="fw-semibold">S.B Shop</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-lg-3">
+        <li class="nav-item"><a class="nav-link" href="/products">Shop</a></li>
+        <li class="nav-item"><a class="nav-link" href="/cart">Cart</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin">Admin</a></li>
+        <li class="nav-item">
+          <button id="themeToggle" class="btn btn-outline-secondary btn-sm" aria-label="Toggle dark mode">🌙</button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<script>
+// Keep the moon icon visible in dark mode by using text (🌙) not a tinted SVG.
+// Optional: if you had an icon that disappeared, ensure CSS sets color appropriately.
+
+(() => {
+  const prefers = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const saved = localStorage.getItem('theme');
+  const html = document.documentElement;
+  if (saved) html.dataset.theme = saved;
+  else html.dataset.theme = prefers ? 'dark' : 'light';
+
+  document.getElementById('themeToggle')?.addEventListener('click', () => {
+    const next = html.dataset.theme === 'dark' ? 'light' : 'dark';
+    html.dataset.theme = next;
+    localStorage.setItem('theme', next);
+  });
+})();
+</script>
+<style>
+:root[data-theme="light"] {
+  --bg: #ffffff;
+  --fg: #111827;
+  --muted: #6b7280;
+  --nav-bg: #f8f9fa;
+}
+:root[data-theme="dark"] {
+  --bg: #0b0f19;
+  --fg: #e5e7eb;
+  --muted: #9ca3af;
+  --nav-bg: #0f172a;
+}
+body { background: var(--bg); color: var(--fg); }
+.navbar .nav-link, .navbar-brand { color: var(--fg) !important; }
+.navbar .btn-outline-secondary { color: var(--fg); border-color: var(--muted); }
+.navbar .btn-outline-secondary:hover { background: var(--muted); color: var(--bg); }
+</style>
