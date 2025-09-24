@@ -1,26 +1,47 @@
-<nav class="navbar navbar-expand-lg border-bottom" style="background: var(--nav-bg, #f8f9fa);">
-  <div class="container-fluid px-3">
-    <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('index') }}">
-      <img src="{{ SITE_LOGO_URL or url_for('static', filename='img/logo.png') }}" alt="Logo" style="height:28px;width:auto;">
-      <span class="fw-semibold">{{ site_title or "S.B Shop" }}</span>
+<nav class="navbar navbar-expand-lg navbar-light">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+      {% if site.logo_url %}
+      <img src="{{ site.logo_url }}" alt="Logo" style="width:28px;height:28px;object-fit:contain" class="me-2">
+      {% else %}
+      <i class="bi bi-shop me-2"></i>
+      {% endif %}
+      <span class="fw-bold">{{ site.brand_name }}</span>
     </a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu" aria-label="Toggle navigation">
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
-    <div class="collapse navbar-collapse" id="navMenu">
-      <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-lg-3">
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('products') }}">Shop</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('cart') }}">Cart</a></li>
-        <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_branding') }}">Admin</a></li>
-        <li class="nav-item"><button id="themeToggle" class="btn btn-outline-secondary btn-sm">🌙</button></li>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto align-items-center">
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('store.products') }}">Shop</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('store.cart') }}">Cart</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_branding') }}">Branding</a></li>
+        <li class="nav-item ms-2">
+          <button id="themeToggle" class="btn btn-outline-secondary btn-sm">🌙</button>
+        </li>
       </ul>
     </div>
   </div>
 </nav>
+<script>
+(() => {
+  const html = document.documentElement;
+  const saved = localStorage.getItem('theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  html.dataset.theme = saved || (prefersDark ? 'dark' : 'light');
+  document.getElementById('themeToggle')?.addEventListener('click', () => {
+    html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', html.dataset.theme);
+  });
+})();
+</script>
 <style>
 :root[data-theme="light"] { --nav-bg:#f8f9fa; --fg:#111827 }
 :root[data-theme="dark"] { --nav-bg:#0f172a; --fg:#e5e7eb }
-.navbar .nav-link,.navbar-brand { color: var(--fg) !important; }
+.navbar { background: var(--nav-bg); }
+.navbar .nav-link, .navbar-brand { color: var(--fg) !important; }
 .navbar .btn-outline-secondary { color: var(--fg); border-color:#9ca3af }
 .navbar .btn-outline-secondary:hover { background:#9ca3af; color:#0b0f19 }
 </style>

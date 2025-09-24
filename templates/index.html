@@ -1,8 +1,50 @@
-{% extends "base.html" %}
+{% extends "base_store.html" %}
 {% block content %}
-<div class="text-center py-5">
-  <h1 class="display-6">Welcome to {{ site_title or "S.B Shop" }}</h1>
-  <p class="text-muted">Your simple demo store.</p>
-  <a class="btn btn-primary" href="{{ url_for('products') }}">Browse products</a>
+<div class="hero">
+    <h1 class="display-4 fw-bold">{{ site.welcome_title }}</h1>
+    <p class="lead">{{ site.welcome_subtitle }}</p>
+    <a href="{{ url_for('store.products') }}" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-right-circle me-2"></i>Browse All Products
+    </a>
 </div>
+
+{% if products %}
+<h2 class="text-center mb-4">Featured Products</h2>
+<div class="product-grid">
+    {% for p in products %}
+    <div class="product-card">
+        <img src="{{ p.image }}" 
+             alt="{{ p.name }}" 
+             class="card-img-top"
+             onerror="this.onerror=null; this.src='https://via.placeholder.com/400x400?text=No+Image';">
+        <div class="card-body">
+            <h5 class="card-title">{{ p.name }}</h5>
+            {% if p.price is defined %}
+                <p class="price">${{ '%.2f'|format(p.price|float) }}</p>
+            {% else %}
+                <p class="text-muted">Contact for pricing</p>
+            {% endif %}
+            <div class="d-grid gap-2">
+                <a href="{{ url_for('store.product_detail', pid=p.id) }}" class="btn btn-outline-primary">
+                    View Details
+                </a>
+                {% if p.price is defined %}
+                    <button class="btn btn-primary" onclick="addToCart('{{ p.id }}')">
+                        <i class="bi bi-cart-plus me-1"></i>Add to Cart
+                    </button>
+                {% else %}
+                    <a href="{{ url_for('store.product_detail', pid=p.id) }}" class="btn btn-secondary">
+                        <i class="bi bi-info-circle me-1"></i>More Info
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info text-center">
+    <i class="bi bi-info-circle me-2"></i>No products available yet. Check back soon!
+</div>
+{% endif %}
 {% endblock %}
