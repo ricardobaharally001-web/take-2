@@ -7,7 +7,11 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev")
 
 @app.context_processor
 def inject_site_logo():
-    return {"SITE_LOGO_URL": get_site_setting("logo_url")}
+    try:
+        url = get_site_setting("logo_url")
+    except Exception:
+        url = None
+    return {"SITE_LOGO_URL": url}
 
 @app.route("/")
 def index():
@@ -20,11 +24,18 @@ def admin_branding():
         if not file or not file.filename:
             flash("Please choose an image file.", "danger")
             return redirect(url_for("admin_branding"))
-        url = upload_logo_to_supabase(file)
-        set_site_setting("logo_url", url)
-        flash("Logo updated!", "success")
+        try:
+            url = upload_logo_to_supabase(file)
+            set_site_setting("logo_url", url)
+            flash("Logo updated!", "success")
+        except Exception as e:
+            flash(f"Upload failed: {e}", "danger")
         return redirect(url_for("admin_branding"))
-    current_logo = get_site_setting("logo_url")
+    try:
+        current_logo = get_site_setting("logo_url")
+    except Exception as e:
+        current_logo = None
+        flash(f"Supabase not configured yet: {e}", "warning")
     return render_template("admin_branding.html", current_logo=current_logo)
 
 if __name__ == "__main__":
