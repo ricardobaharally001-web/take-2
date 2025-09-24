@@ -1,1 +1,87 @@
+{% extends "base_store.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0">Edit Product</h2>
+  <a href="{{ url_for('store.admin') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Back to Admin
+  </a>
+</div>
 
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">Product Details</h5>
+  </div>
+  <div class="card-body">
+    <form method="POST" enctype="multipart/form-data">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Product Name *</label>
+          <input type="text" class="form-control" name="name" value="{{ product.name }}" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Price (USD)</label>
+          <input type="number" step="0.01" class="form-control" name="price" 
+                 value="{{ product.price if product.price is defined else '' }}"
+                 placeholder="Leave blank for no price">
+          <div class="form-text">Optional - leave blank to display without price</div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Category</label>
+          <select class="form-select" name="category">
+            <option value="">No Category</option>
+            {% for c in categories %}
+              {% if c.slug != 'all' %}
+              <option value="{{ c.slug }}" {% if product.category == c.slug %}selected{% endif %}>
+                {{ c.name }}
+              </option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" rows="3" name="description">{{ product.description }}</textarea>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Current Image</label>
+          <div class="d-flex align-items-center gap-3">
+            <img src="{{ product.image }}" alt="{{ product.name }}" 
+                 style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;" 
+                 class="border">
+            <div class="text-muted small">Current image will be kept unless you upload a new one</div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">New Image URL</label>
+          <input type="url" class="form-control" name="image_url" placeholder="https://...">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Or Upload New Image</label>
+          <input type="file" class="form-control" name="image_file" accept="image/*">
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle me-1"></i>Save Changes
+          </button>
+          <a href="{{ url_for('store.admin') }}" class="btn btn-outline-secondary ms-2">Cancel</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card mt-4">
+  <div class="card-header bg-danger text-white">
+    <h6 class="mb-0">Danger Zone</h6>
+  </div>
+  <div class="card-body">
+    <p class="text-muted">Once you delete a product, there is no going back. Please be certain.</p>
+    <form method="POST" action="{{ url_for('store.admin_delete_product', pid=product.id) }}" 
+          onsubmit="return confirm('Are you sure you want to delete this product? This action cannot be undone.');">
+      <button type="submit" class="btn btn-danger">
+        <i class="bi bi-trash me-1"></i>Delete Product
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
