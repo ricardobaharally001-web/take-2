@@ -60,5 +60,48 @@ def admin_branding():
     current_logo = site.get("logo_url")
     return render_template("admin_branding.html", current_logo=current_logo, site=site, title="Branding")
 
+# Admin-only Supabase diagnostics (temporary)
+@app.route("/admin/debug/supabase")
+def admin_debug_supabase():
+    if not store_mod.check_admin():
+        return redirect(url_for("store.admin_login", next=request.path))
+    info = {
+        "connected": bool(store_mod.supabase_client),
+        "url_set": bool(os.environ.get("SUPABASE_URL")),
+        "anon_key_set": bool(os.environ.get("SUPABASE_ANON_KEY")),
+        "service_key_set": bool(os.environ.get("SUPABASE_SERVICE_ROLE_KEY")),
+        "buckets": {
+            "products_bucket": os.environ.get("SUPABASE_BUCKET", "product-images"),
+            "assets_bucket": os.environ.get("SUPABASE_ASSETS_BUCKET", "assets"),
+        },
+        "checks": {},
+    }
+    # Try reading products
+    try:
+        prods = store_mod.load_products()
+        info["checks"]["products_count"] = len(prods or [])
+        info["checks"]["products_example"] = (prods or [None])[0]
+    except Exception as e:
+        info["checks"]["products_error"] = str(e)
+    # Try reading categories
+    try:
+        cats = store_mod.load_categories()
+        info["checks"]["categories_count"] = len(cats or [])
+        info["checks"]["categories_example"] = (cats or [None])[0]
+    except Exception as e:
+        info["checks"]["categories_error"] = str(e)
+    # Try reading site setting logo_url
+    try:
+        logo = get_site_setting("logo_url")
+        info["checks"]["site_logo_url"] = logo
+    except Exception as e:
+        info["checks"]["site_logo_error"] = str(e)
+    # Render as simple preformatted page
+    return render_template(
+        "admin_settings.html",
+        settings=store_mod.load_settings(),
+        debug_info=info,
+    )
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", "5000")))
