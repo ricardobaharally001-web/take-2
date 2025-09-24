@@ -60,6 +60,7 @@
                         <th>Image</th>
                         <th>Name</th>
                         <th>Price</th>
+                        <th>Stock</th>
                         <th>Description</th>
                         <th>Actions</th>
                     </tr>
@@ -77,6 +78,14 @@
                                 ${{ '%.2f'|format(p.price|float) }}
                             {% else %}
                                 <span class="text-muted">No price</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set quantity = p.quantity if p.quantity is defined else 0 %}
+                            {% if quantity > 0 %}
+                                <span class="badge bg-success">{{ quantity }} in stock</span>
+                            {% else %}
+                                <span class="badge bg-danger">Out of stock</span>
                             {% endif %}
                         </td>
                         <td>{{ p.description[:50] }}...</td>
