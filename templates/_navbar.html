@@ -1,41 +1,26 @@
 <nav class="navbar navbar-expand-lg border-bottom" style="background: var(--nav-bg, #f8f9fa);">
   <div class="container-fluid px-3">
-    <a class="navbar-brand d-flex align-items-center gap-2" href="/">
-      <img src="{{ SITE_LOGO_URL or url_for('static', filename='img/logo.svg') }}" alt="S.B Shop" style="height:28px;width:auto;">
-      <span class="fw-semibold">S.B Shop</span>
+    <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('index') }}">
+      <img src="{{ SITE_LOGO_URL or url_for('static', filename='img/logo.png') }}" alt="Logo" style="height:28px;width:auto;">
+      <span class="fw-semibold">{{ site_title or "S.B Shop" }}</span>
     </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navMenu">
       <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-lg-3">
-        <li class="nav-item"><a class="nav-link" href="/products">Shop</a></li>
-        <li class="nav-item"><a class="nav-link" href="/cart">Cart</a></li>
-        <li class="nav-item"><a class="nav-link" href="/admin">Admin</a></li>
-        <li class="nav-item">
-          <button id="themeToggle" class="btn btn-outline-secondary btn-sm" aria-label="Toggle dark mode">🌙</button>
-        </li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('products') }}">Shop</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('cart') }}">Cart</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_branding') }}">Admin</a></li>
+        <li class="nav-item"><button id="themeToggle" class="btn btn-outline-secondary btn-sm">🌙</button></li>
       </ul>
     </div>
   </div>
 </nav>
-<script>
-(() => {
-  const saved = localStorage.getItem('theme');
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const html = document.documentElement;
-  html.dataset.theme = saved || (prefersDark ? 'dark' : 'light');
-  document.getElementById('themeToggle')?.addEventListener('click', () => {
-    html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
-    localStorage.setItem('theme', html.dataset.theme);
-  });
-})();
-</script>
 <style>
-:root[data-theme="light"] { --bg:#ffffff; --fg:#111827; --muted:#6b7280; --nav-bg:#f8f9fa; }
-:root[data-theme="dark"] { --bg:#0b0f19; --fg:#e5e7eb; --muted:#9ca3af; --nav-bg:#0f172a; }
-body { background: var(--bg); color: var(--fg); }
-.navbar .nav-link, .navbar-brand { color: var(--fg) !important; }
-.navbar .btn-outline-secondary { color: var(--fg); border-color: var(--muted); }
-.navbar .btn-outline-secondary:hover { background: var(--muted); color: var(--bg); }
+:root[data-theme="light"] { --nav-bg:#f8f9fa; --fg:#111827 }
+:root[data-theme="dark"] { --nav-bg:#0f172a; --fg:#e5e7eb }
+.navbar .nav-link,.navbar-brand { color: var(--fg) !important; }
+.navbar .btn-outline-secondary { color: var(--fg); border-color:#9ca3af }
+.navbar .btn-outline-secondary:hover { background:#9ca3af; color:#0b0f19 }
 </style>
