@@ -615,6 +615,28 @@ footer {
   color: var(--danger-red);
 }
 
+/* Stock Status for Product Cards */
+.stock-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  margin-bottom: var(--spacing-sm);
+}
+
+.stock-status.text-success {
+  color: var(--success-green) !important;
+}
+
+.stock-status.text-danger {
+  color: var(--danger-red) !important;
+}
+
+.stock-status.text-warning {
+  color: var(--warning-orange) !important;
+}
+
 /* Search and Filter Bar */
 .search-filter-bar {
   background-color: var(--light-bg);
