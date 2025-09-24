@@ -115,10 +115,37 @@ def inject_site_settings():
 
 # Categories
 def load_categories():
+    """Load categories from Supabase or local file (fallback)."""
+    # Try Supabase first
+    if supabase_client:
+        try:
+            try:
+                res = supabase_client.table('categories').select('*').order('name').execute()
+                if res.data is not None:
+                    cats = res.data
+                    if not cats:
+                        # Ensure there is at least an 'All' category in remote
+                        default_cat = {"name": "All", "slug": "all"}
+                        try:
+                            supabase_client.table('categories').upsert(default_cat).execute()
+                            cats = [default_cat]
+                        except Exception:
+                            cats = [default_cat]
+                    return cats
+            except Exception:
+                # Table may not exist; fall through to local
+                pass
+        except Exception as e:
+            print(f"Error loading categories from Supabase: {e}")
+
+    # Fallback to local JSON file
     if os.path.exists(CATEGORIES_FILE):
         try:
             with open(CATEGORIES_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                if not data:
+                    data = [{"name": "All", "slug": "all"}]
+                return data
         except Exception as e:
             print(f"Error reading categories: {e}")
     # default with one category
@@ -129,19 +156,52 @@ def load_categories():
     return cats
 
 def save_categories(categories):
+    """Persist categories to local file and Supabase (if available)."""
+    # Always save locally as a backup
     try:
         with open(CATEGORIES_FILE, "w", encoding="utf-8") as f:
             json.dump(categories, f, indent=2)
-        return True
     except Exception as e:
-        print(f"Error saving categories: {e}")
-        return False
+        print(f"Error saving categories locally: {e}")
+
+    # Save to Supabase if configured
+    if supabase_client:
+        try:
+            # Upsert each category
+            for c in categories:
+                if not c.get('slug') or not c.get('name'):
+                    continue
+                try:
+                    supabase_client.table('categories').upsert(c).execute()
+                except Exception:
+                    # If upsert unsupported, try insert then ignore on conflict
+                    supabase_client.table('categories').insert(c).execute()
+        except Exception as e:
+            print(f"Error saving categories to Supabase: {e}")
+    return True
 
 def add_category(name):
     name = name.strip()
     if not name:
         return False, "Category name required"
     slug = name.lower().replace(' ', '-').replace('/', '-')
+    # Remote-first path
+    if supabase_client:
+        try:
+            # Check if exists remotely
+            res = supabase_client.table('categories').select('slug').eq('slug', slug).limit(1).execute()
+            if res.data:
+                return False, "Category already exists"
+            supabase_client.table('categories').insert({"name": name, "slug": slug}).execute()
+            # Also update local cache
+            cats = load_categories()
+            if not any(c.get('slug') == slug for c in cats):
+                cats.append({"name": name, "slug": slug})
+                save_categories(cats)
+            return True, slug
+        except Exception as e:
+            print(f"Error adding category to Supabase: {e}")
+    # Local fallback
     cats = load_categories()
     if any(c.get('slug') == slug for c in cats):
         return False, "Category already exists"
@@ -150,6 +210,13 @@ def add_category(name):
     return True, slug
 
 def delete_category(slug):
+    # Delete in Supabase first if available
+    if supabase_client:
+        try:
+            supabase_client.table('categories').delete().eq('slug', slug).execute()
+        except Exception as e:
+            print(f"Error deleting category from Supabase: {e}")
+    # Update local cache/file
     cats = load_categories()
     cats = [c for c in cats if c.get('slug') != slug]
     save_categories(cats)
