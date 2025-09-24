@@ -41,7 +41,7 @@
             <h5 class="card-title">{{ p.name }}</h5>
             <p class="text-muted small">{{ p.description[:50] }}...</p>
             {% if p.price is defined %}
-                <p class="price">${{ '%.2f'|format(p.price) }}</p>
+                <p class="price">${{ '%.2f'|format(p.price|float) }}</p>
             {% else %}
                 <p class="text-muted">Contact for pricing</p>
             {% endif %}
