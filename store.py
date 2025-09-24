@@ -254,22 +254,12 @@ def load_products():
     """Load products from Supabase or local file"""
     if supabase_client:
         try:
-            # Try 'products' table first, fall back to 'product' if it doesn't exist
-            try:
-                response = supabase_client.table('products').select('*').order('created_at', desc=True).execute()
-                if response.data:
-                    # Fix image URLs for any broken references
-                    for product in response.data:
-                        product['image'] = get_safe_image_url(product.get('image', ''))
-                    return response.data
-            except:
-                # Fallback to singular 'product' table
-                response = supabase_client.table('product').select('*').order('created_at', desc=True).execute()
-                if response.data:
-                    # Fix image URLs for any broken references
-                    for product in response.data:
-                        product['image'] = get_safe_image_url(product.get('image', ''))
-                    return response.data
+            response = supabase_client.table('products').select('*').order('created_at', desc=True).execute()
+            if response.data:
+                # Fix image URLs for any broken references
+                for product in response.data:
+                    fix_image_url(product)
+                return response.data
         except Exception as e:
             print(f"Error loading from Supabase: {e}")
     
@@ -348,11 +338,7 @@ def save_products(products):
             for product in products:
                 if 'created_at' not in product:
                     product['created_at'] = datetime.now().isoformat()
-                # Try 'products' first, fall back to 'product'
-                try:
-                    supabase_client.table('products').upsert(product).execute()
-                except:
-                    supabase_client.table('product').upsert(product).execute()
+                supabase_client.table('products').upsert(product).execute()
         except Exception as e:
             print(f"Error saving to Supabase: {e}")
 
@@ -378,11 +364,7 @@ def add_product(name, price, description, image_url, category='', quantity=0):
     
     if supabase_client:
         try:
-            # Try 'products' first, fall back to 'product'
-            try:
-                response = supabase_client.table('products').insert(new_product).execute()
-            except:
-                response = supabase_client.table('product').insert(new_product).execute()
+            response = supabase_client.table('products').insert(new_product).execute()
             return True
         except Exception as e:
             print(f"Error adding to Supabase: {e}")
@@ -434,11 +416,7 @@ def update_product(pid, name, price, description, image_url, category='', quanti
     
     if supabase_client:
         try:
-            # Try 'products' first, fall back to 'product'
-            try:
-                supabase_client.table('products').update(product).eq('id', pid).execute()
-            except:
-                supabase_client.table('product').update(product).eq('id', pid).execute()
+            supabase_client.table('products').update(product).eq('id', pid).execute()
         except Exception as e:
             print(f"Error updating in Supabase: {e}")
     
@@ -448,11 +426,7 @@ def delete_product(pid):
     """Delete a product"""
     if supabase_client:
         try:
-            # Try 'products' first, fall back to 'product'
-            try:
-                supabase_client.table('products').delete().eq('id', pid).execute()
-            except:
-                supabase_client.table('product').delete().eq('id', pid).execute()
+            supabase_client.table('products').delete().eq('id', pid).execute()
             return True
         except Exception as e:
             print(f"Error deleting from Supabase: {e}")
@@ -509,11 +483,7 @@ def reduce_stock(pid, quantity):
     # Update in Supabase if available
     if supabase_client:
         try:
-            # Try 'products' first, fall back to 'product'
-            try:
-                supabase_client.table('products').update({'quantity': product['quantity']}).eq('id', pid).execute()
-            except:
-                supabase_client.table('product').update({'quantity': product['quantity']}).eq('id', pid).execute()
+            supabase_client.table('products').update({'quantity': product['quantity']}).eq('id', pid).execute()
         except Exception as e:
             print(f"Error updating stock in Supabase: {e}")
     
