@@ -35,11 +35,22 @@ def upload_logo_to_supabase(file_storage) -> str:
     data = file_storage.read()
     file_storage.seek(0)
     client = _get_client()
-    client.storage.from_(SUPABASE_ASSETS_BUCKET).upload(
-        key,
-        data,
-        {"content-type": f"image/{ext}", "upsert": True},
+    # Use correct option names expected by supabase-py storage client
+    # Choose correct MIME type
+    mime = (
+        "image/svg+xml" if ext in ("svg",) else
+        f"image/{ext}"
     )
+    result = client.storage.from_(SUPABASE_ASSETS_BUCKET).upload(
+        path=key,
+        file=data,
+        file_options={"contentType": mime, "upsert": True},
+    )
+    # Some client versions return dict/bool; detect errors gracefully
+    if isinstance(result, dict) and result.get("error"):
+        raise RuntimeError(f"Supabase upload error: {result['error']}")
+    if result is False:
+        raise RuntimeError("Supabase upload failed")
     return _public_url(SUPABASE_ASSETS_BUCKET, key)
 
 def get_site_setting(key: str) -> str | None:
