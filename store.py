@@ -51,6 +51,7 @@ DEFAULT_SETTINGS = {
     "welcome_title": "Welcome to S.B Shop",
     "welcome_subtitle": "Discover our curated collection of premium products",
     "admin_password": os.getenv("ADMIN_PASSWORD", "admin123"),
+    "whatsapp_phone": "",
 }
 
 def get_safe_image_url(image_path):
@@ -528,10 +529,32 @@ def api_check_stock(pid):
         "message": "In stock" if quantity > 0 else "Out of stock"
     })
 
+@store_bp.route("/api/whatsapp-settings")
+def get_whatsapp_settings():
+    """Get WhatsApp phone number for checkout integration"""
+    settings = load_settings()
+    whatsapp_phone = settings.get("whatsapp_phone", "")
+    return jsonify({
+        "whatsapp_enabled": bool(whatsapp_phone),
+        "whatsapp_phone": whatsapp_phone
+    })
+
 @store_bp.route("/api/cart/checkout", methods=["POST"])
 def checkout():
     payload = request.json or {}
     cart_items = payload.get('cart', [])
+    customer_name = payload.get('customer_name', '').strip()
+    
+    # Check if WhatsApp integration is enabled
+    settings = load_settings()
+    whatsapp_phone = settings.get("whatsapp_phone", "")
+    
+    if whatsapp_phone and not customer_name:
+        return jsonify({
+            "ok": False,
+            "message": "Customer name is required for WhatsApp checkout",
+            "requires_name": True
+        }), 400
     
     # Check stock availability for all items first
     stock_errors = []
@@ -563,12 +586,49 @@ def checkout():
                 "message": f"Stock reduction failed: {message}"
             }), 400
     
-    # Here you would integrate with payment gateway
-    # For now, just return success
+    # Generate order ID
+    order_id = uuid.uuid4().hex[:8].upper()
+    
+    # If WhatsApp is enabled, generate WhatsApp message
+    if whatsapp_phone:
+        # Create order summary for WhatsApp
+        order_summary = f"🛒 *New Order #{order_id}*\n\n"
+        order_summary += f"👤 *Customer:* {customer_name}\n\n"
+        order_summary += "*Items:*\n"
+        
+        total = 0
+        for item in cart_items:
+            item_total = item.get('price', 0) * item.get('qty', 1)
+            total += item_total
+            order_summary += f"• {item.get('name', 'Unknown')} x{item.get('qty', 1)} - ${item_total:.2f}\n"
+        
+        shipping = 5.0 if cart_items else 0
+        grand_total = total + shipping
+        
+        order_summary += f"\n💰 *Subtotal:* ${total:.2f}\n"
+        order_summary += f"🚚 *Shipping:* ${shipping:.2f}\n"
+        order_summary += f"🎯 *Total:* ${grand_total:.2f}\n\n"
+        order_summary += f"📅 *Order Time:* {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        
+        # Create WhatsApp URL
+        import urllib.parse
+        whatsapp_message = urllib.parse.quote(order_summary)
+        whatsapp_url = f"https://wa.me/{whatsapp_phone.replace('+', '')}?text={whatsapp_message}"
+        
+        return jsonify({
+            "ok": True, 
+            "message": "Order processed! Redirecting to WhatsApp...",
+            "order_id": order_id,
+            "whatsapp_url": whatsapp_url,
+            "use_whatsapp": True
+        })
+    
+    # Regular checkout without WhatsApp
     return jsonify({
         "ok": True, 
         "message": "Order received successfully!",
-        "order_id": uuid.uuid4().hex[:8].upper()
+        "order_id": order_id,
+        "use_whatsapp": False
     })
 
 # Admin routes
@@ -642,6 +702,21 @@ def admin_settings():
             settings["logo_url"] = request.form.get("logo_url", settings.get("logo_url", "")).strip()
         settings["welcome_title"] = request.form.get("welcome_title", settings["welcome_title"]).strip()
         settings["welcome_subtitle"] = request.form.get("welcome_subtitle", settings["welcome_subtitle"]).strip()
+        
+        # Handle WhatsApp phone number
+        whatsapp_phone = request.form.get("whatsapp_phone", "").strip()
+        if whatsapp_phone:
+            # Basic validation for phone number format
+            import re
+            if re.match(r'^\+[1-9]\d{1,14}$', whatsapp_phone):
+                settings["whatsapp_phone"] = whatsapp_phone
+                flash("WhatsApp phone number updated", "success")
+            else:
+                flash("Invalid phone number format. Please use international format (e.g., +1234567890)", "danger")
+                return render_template("admin_settings.html", settings=settings)
+        else:
+            settings["whatsapp_phone"] = ""
+        
         current_pw = request.form.get("current_password", "").strip()
         new_pw = request.form.get("new_password", "").strip()
         confirm_pw = request.form.get("confirm_password", "").strip()
