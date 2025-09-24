@@ -1,175 +1,60 @@
-import os
-import io
-from supabase import create_client
-from datetime import datetime
+{% extends "base_store.html" %}
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('store.products') }}">Products</a></li>
+        <li class="breadcrumb-item active">{{ product.name }}</li>
+    </ol>
+</nav>
 
-SUPABASE_ASSETS_BUCKET = os.environ.get("SUPABASE_ASSETS_BUCKET", "assets")
-
-def _get_env():
-    url = os.environ.get("SUPABASE_URL")
-    # Prefer SERVICE ROLE for server-side writes; fall back to ANON if needed
-    key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_ANON_KEY")
-    return url, key
-
-_supabase_client = None
-
-def _get_client():
-    """Create the Supabase client lazily so imports don't crash when env is missing."""
-    global _supabase_client
-    if _supabase_client is None:
-        url, key = _get_env()
-        if not url or not key:
-            raise RuntimeError("Supabase not configured. Set SUPABASE_URL and either SUPABASE_ANON_KEY or SUPABASE_SERVICE_ROLE_KEY.")
-        _supabase_client = create_client(url, key)
-    return _supabase_client
-
-def _public_url(bucket: str, path: str) -> str:
-    url, _ = _get_env()
-    return f"{url}/storage/v1/object/public/{bucket}/{path}"
-
-def upload_logo_to_supabase(file_storage) -> str:
-    """Upload a new logo to the assets bucket and return its public URL."""
-    filename = file_storage.filename or "logo.png"
-    stamp = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
-    ext = (filename.rsplit(".", 1)[-1] if "." in filename else "png").lower()
-    key = f"branding/logo_{stamp}.{ext}"
-    data = file_storage.read()
-    file_storage.seek(0)
-    client = _get_client()
-    # Use correct option names expected by supabase-py storage client
-    # Choose correct MIME type
-    mime = (
-        "image/svg+xml" if ext in ("svg",) else
-        f"image/{ext}"
-    )
-    # Try multiple call signatures for compatibility across supabase-py versions
-    result = None
-    last_err = None
-    try:
-        # Variant A: upsert inside file_options (older clients)
-        result = client.storage.from_(SUPABASE_ASSETS_BUCKET).upload(
-            path=key,
-            file=data,
-            file_options={"contentType": mime, "cacheControl": "3600", "upsert": True},
-        )
-    except Exception as e_a:
-        last_err = e_a
-        try:
-            # Variant B: upsert separate kwarg (newer clients)
-            result = client.storage.from_(SUPABASE_ASSETS_BUCKET).upload(
-                path=key,
-                file=data,
-                file_options={"contentType": mime, "cacheControl": "3600"},
-                upsert=True,
-            )
-        except Exception as e_b:
-            last_err = e_b
-            try:
-                # Variant C: minimal call without options
-                result = client.storage.from_(SUPABASE_ASSETS_BUCKET).upload(
-                    path=key,
-                    file=data,
-                )
-            except Exception as e_c:
-                last_err = e_c
-                try:
-                    # Variant D: use file-like object (BytesIO)
-                    bio = io.BytesIO(data)
-                    result = client.storage.from_(SUPABASE_ASSETS_BUCKET).upload(
-                        path=key,
-                        file=bio,
-                        file_options={"contentType": mime, "cacheControl": "3600"},
-                        upsert=True,
-                    )
-                except Exception as e_d:
-                    last_err = e_d
-                    raise RuntimeError(f"Supabase upload failed: {last_err}")
-
-    # Some client versions return dict/bool; detect errors gracefully
-    if isinstance(result, dict) and result.get("error"):
-        raise RuntimeError(f"Supabase upload error: {result['error']}")
-    if result is False:
-        raise RuntimeError("Supabase upload failed (returned False)")
-    return _public_url(SUPABASE_ASSETS_BUCKET, key)
-
-def get_site_setting(key: str) -> str | None:
-    """Return a site setting value, supporting multiple schema variants.
-
-    We support:
-    1) Key/Value table: site_settings(key text primary key, value text)
-    2) Single-row config table: site_settings has a dedicated column, e.g. site_settings.logo_url
-    3) Legacy table name: settings
-    """
-    client = _get_client()
-    # Variant 1: key/value
-    try:
-        res = client.table("site_settings").select("value").eq("key", key).limit(1).execute()
-        if res.data:
-            return res.data[0].get("value")
-    except Exception:
-        pass
-
-    # Variant 2: dedicated column on site_settings
-    try:
-        res = client.table("site_settings").select(key).limit(1).execute()
-        if res.data and res.data[0].get(key):
-            return res.data[0].get(key)
-    except Exception:
-        pass
-
-    # Variant 3: dedicated column on settings
-    try:
-        res = client.table("settings").select(key).limit(1).execute()
-        if res.data and res.data[0].get(key):
-            return res.data[0].get(key)
-    except Exception:
-        pass
-    return None
-
-def set_site_setting(key: str, value: str):
-    """Persist a site setting, supporting multiple schema variants.
-
-    Attempts in order:
-    1) Upsert into key/value table site_settings(key,value)
-    2) Update first row in site_settings setting a dedicated column; create row if none
-    3) Update first row in settings table similarly
-    """
-    client = _get_client()
-    # Variant 1: key/value table
-    try:
-        client.table("site_settings").upsert({"key": key, "value": value}).execute()
-        return
-    except Exception:
-        pass
-
-    # Variant 2: dedicated column on site_settings
-    try:
-        # Try update existing row
-        res = client.table("site_settings").select("id").limit(1).execute()
-        if res.data:
-            row_id = res.data[0].get("id")
-            if row_id is not None:
-                client.table("site_settings").update({key: value}).eq("id", row_id).execute()
-            else:
-                # No id column; do an update without filter (affects all rows)
-                client.table("site_settings").update({key: value}).execute()
-        else:
-            # Insert a new row with the column
-            client.table("site_settings").insert({key: value}).execute()
-        return
-    except Exception:
-        pass
-
-    # Variant 3: dedicated column on settings
-    try:
-        res = client.table("settings").select("id").limit(1).execute()
-        if res.data:
-            row_id = res.data[0].get("id")
-            if row_id is not None:
-                client.table("settings").update({key: value}).eq("id", row_id).execute()
-            else:
-                client.table("settings").update({key: value}).execute()
-        else:
-            client.table("settings").insert({key: value}).execute()
-    except Exception:
-        pass
+<div class="row">
+    <div class="col-md-6">
+        <img src="{{ product.image }}" 
+             alt="{{ product.name }}" 
+             class="img-fluid rounded"
+             onerror="this.onerror=null; this.src='https://via.placeholder.com/400x400?text=No+Image';">
+    </div>
+    <div class="col-md-6">
+        <h1>{{ product.name }}</h1>
+        {% if product.price is defined %}
+            <p class="price-large">${{ '%.2f'|format(product.price|float) }}</p>
+            {% set quantity = product.quantity if product.quantity is defined else 0 %}
+            {% if quantity > 0 %}
+                <p class="stock-indicator in-stock">
+                    <i class="bi bi-check-circle"></i> In Stock ({{ quantity }} available)
+                </p>
+            {% else %}
+                <p class="stock-indicator out-of-stock">
+                    <i class="bi bi-x-circle"></i> Out of Stock
+                </p>
+            {% endif %}
+        {% else %}
+            <p class="text-muted lead">Contact for pricing</p>
+        {% endif %}
+        <p class="lead">{{ product.description }}</p>
+        
+        <div class="d-grid gap-2 d-md-block">
+            {% if product.price is defined %}
+                {% set quantity = product.quantity if product.quantity is defined else 0 %}
+                {% if quantity > 0 %}
+                    <button class="btn btn-primary btn-lg" onclick="addToCart('{{ product.id }}')">
+                        <i class="bi bi-cart-plus me-2"></i>Add to Cart
+                    </button>
+                {% else %}
+                    <button class="btn btn-secondary btn-lg" disabled>
+                        <i class="bi bi-x-circle me-2"></i>Out of Stock
+                    </button>
+                {% endif %}
+            {% else %}
+                <button class="btn btn-secondary btn-lg" disabled>
+                    <i class="bi bi-info-circle me-2"></i>Contact for Purchase
+                </button>
+            {% endif %}
+            <a href="{{ url_for('store.products') }}" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-arrow-left me-2"></i>Continue Shopping
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
