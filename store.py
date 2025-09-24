@@ -143,7 +143,7 @@ def load_products():
                     return response.data
             except:
                 # Fallback to singular 'product' table
-                response = supabase_client.table('products').select('*').order('created_at', desc=True).execute()
+                response = supabase_client.table('product').select('*').order('created_at', desc=True).execute()
                 if response.data:
                     return response.data
         except Exception as e:
@@ -218,7 +218,7 @@ def save_products(products):
                 try:
                     supabase_client.table('products').upsert(product).execute()
                 except:
-                    supabase_client.table('products').upsert(product).execute()
+                    supabase_client.table('product').upsert(product).execute()
         except Exception as e:
             print(f"Error saving to Supabase: {e}")
 
@@ -247,7 +247,7 @@ def add_product(name, price, description, image_url, category=''):
             try:
                 response = supabase_client.table('products').insert(new_product).execute()
             except:
-                response = supabase_client.table('products').insert(new_product).execute()
+                response = supabase_client.table('product').insert(new_product).execute()
             return True
         except Exception as e:
             print(f"Error adding to Supabase: {e}")
@@ -296,7 +296,7 @@ def update_product(pid, name, price, description, image_url, category=''):
             try:
                 supabase_client.table('products').update(product).eq('id', pid).execute()
             except:
-                supabase_client.table('products').update(product).eq('id', pid).execute()
+                supabase_client.table('product').update(product).eq('id', pid).execute()
         except Exception as e:
             print(f"Error updating in Supabase: {e}")
     
@@ -310,7 +310,7 @@ def delete_product(pid):
             try:
                 supabase_client.table('products').delete().eq('id', pid).execute()
             except:
-                supabase_client.table('products').delete().eq('id', pid).execute()
+                supabase_client.table('product').delete().eq('id', pid).execute()
             return True
         except Exception as e:
             print(f"Error deleting from Supabase: {e}")
