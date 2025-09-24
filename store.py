@@ -256,6 +256,10 @@ def load_products():
         try:
             response = supabase_client.table('products').select('*').order('created_at', desc=True).execute()
             if response.data:
+                # Ensure all products have a quantity field
+                for product in response.data:
+                    if 'quantity' not in product or product['quantity'] is None:
+                        product['quantity'] = 0
                 return response.data
         except Exception as e:
             print(f"Error loading from Supabase: {e}")
