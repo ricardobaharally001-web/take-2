@@ -104,6 +104,14 @@ def admin_debug_supabase():
         info["checks"]["site_logo_url"] = logo
     except Exception as e:
         info["checks"]["site_logo_error"] = str(e)
+    
+    # Try reading WhatsApp phone number
+    try:
+        whatsapp_phone = get_site_setting("whatsapp_phone")
+        info["checks"]["whatsapp_phone"] = whatsapp_phone or "Not set"
+        info["checks"]["whatsapp_enabled"] = bool(whatsapp_phone)
+    except Exception as e:
+        info["checks"]["whatsapp_error"] = str(e)
     # Render as simple preformatted page
     return render_template(
         "admin_settings.html",
