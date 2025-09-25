@@ -24,7 +24,7 @@
             <option value="{{ p.id }}">
               {{ p.name }} — 
               {% if p.price is defined %}
-                ${{ '%.2f'|format(p.price|float) }}
+                G${{ '%.2f'|format(p.price|float) }}
               {% else %}
                 No price
               {% endif %}
@@ -54,7 +54,7 @@
           <input type="text" class="form-control" name="name" required>
         </div>
         <div class="col-md-2">
-          <label class="form-label">Price (USD)</label>
+          <label class="form-label">Price (GYD)</label>
           <input type="number" step="0.01" class="form-control" name="price" 
                  placeholder="Leave blank for no price">
           <div class="form-text">Optional</div>
@@ -118,7 +118,7 @@
             <td>{{ p.name }}</td>
             <td>
               {% if p.price is defined %}
-                ${{ '%.2f'|format(p.price|float) }}
+                G${{ '%.2f'|format(p.price|float) }}
               {% else %}
                 <span class="text-muted">No price</span>
               {% endif %}
