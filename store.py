@@ -1,7 +1,7 @@
 import os
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, abort, flash, session
 from werkzeug.utils import secure_filename
 try:
@@ -99,6 +99,15 @@ def get_whatsapp_phone():
     # Fallback to local settings
     settings = load_settings()
     return settings.get("whatsapp_phone", "")
+
+def get_guyana_time():
+    """Get current time in Guyana timezone (GMT-4)."""
+    guyana_tz = timezone(timedelta(hours=-4))
+    return datetime.now(guyana_tz)
+
+def format_currency(amount):
+    """Format amount as Guyanese Dollar (GYD)."""
+    return f"G${amount:.2f}"
 
 def save_settings(settings):
     try:
@@ -597,15 +606,15 @@ def checkout():
         for item in cart_items:
             item_total = item.get('price', 0) * item.get('qty', 1)
             total += item_total
-            order_summary += f"• {item.get('name', 'Unknown')} x{item.get('qty', 1)} - ${item_total:.2f}\n"
+            order_summary += f"• {item.get('name', 'Unknown')} x{item.get('qty', 1)} - {format_currency(item_total)}\n"
         
         shipping = 5.0 if cart_items else 0
         grand_total = total + shipping
         
-        order_summary += f"\n💰 *Subtotal:* ${total:.2f}\n"
-        order_summary += f"🚚 *Shipping:* ${shipping:.2f}\n"
-        order_summary += f"🎯 *Total:* ${grand_total:.2f}\n\n"
-        order_summary += f"📅 *Order Time:* {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        order_summary += f"\n💰 *Subtotal:* {format_currency(total)}\n"
+        order_summary += f"🚚 *Shipping:* {format_currency(shipping)}\n"
+        order_summary += f"🎯 *Total:* {format_currency(grand_total)}\n\n"
+        order_summary += f"📅 *Order Time:* {datetime.now().strftime('%Y-%m-%d %H:%M:%S (Guyana Time)')}"
         
         # Create WhatsApp URL
         import urllib.parse
