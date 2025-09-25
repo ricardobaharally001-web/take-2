@@ -15,11 +15,11 @@
 
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto align-items-center">
-        <li class="nav-item"><a class="nav-link nav-btn" href="{{ url_for('store.products') }}">Shop</a></li>
-        <li class="nav-item"><a class="nav-link nav-btn" href="{{ url_for('store.cart') }}">Cart</a></li>
-        <li class="nav-item"><a class="nav-link nav-btn" href="{{ url_for('admin_branding') }}">Admin</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('store.products') }}">Shop</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('store.cart') }}">Cart</a></li>
+        <li class="nav-item"><a class="nav-link" href="{{ url_for('admin_branding') }}">Admin</a></li>
         <li class="nav-item ms-2">
-          <button id="themeToggle" class="btn nav-btn-toggle">🌙</button>
+          <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
         </li>
       </ul>
     </div>
