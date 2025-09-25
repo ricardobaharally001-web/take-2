@@ -347,7 +347,7 @@ def save_products(products):
         try:
             for product in products:
                 if 'created_at' not in product:
-                    product['created_at'] = datetime.now().isoformat()
+                    product['created_at'] = get_guyana_time().isoformat()
                 supabase_client.table('products').upsert(product).execute()
         except Exception as e:
             print(f"Error saving to Supabase: {e}")
@@ -362,7 +362,7 @@ def add_product(name, price, description, image_url, category='', quantity=0):
         "image": image_url,
         "category": category,
         "quantity": int(quantity) if quantity else 0,
-        "created_at": datetime.now().isoformat()
+        "created_at": get_guyana_time().isoformat()
     }
     
     # Only add price if it's provided and not empty
@@ -614,7 +614,7 @@ def checkout():
         order_summary += f"\n💰 *Subtotal:* {format_currency(total)}\n"
         order_summary += f"🚚 *Shipping:* {format_currency(shipping)}\n"
         order_summary += f"🎯 *Total:* {format_currency(grand_total)}\n\n"
-        order_summary += f"📅 *Order Time:* {datetime.now().strftime('%Y-%m-%d %H:%M:%S (Guyana Time)')}"
+        order_summary += f"📅 *Order Time:* {get_guyana_time().strftime('%Y-%m-%d %H:%M:%S (Guyana Time)')}"
         
         # Create WhatsApp URL
         import urllib.parse
