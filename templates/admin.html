@@ -75,6 +75,7 @@
                         <td>{{ p.name }}</td>
                         <td>
                             {% if p.price is defined %}
+                                GYD ${{ '%.2f'|format(p.price|float) }}
                             {% else %}
                                 <span class="text-muted">No price</span>
                             {% endif %}
