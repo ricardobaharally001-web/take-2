@@ -18,7 +18,7 @@
     <div class="col-md-6">
         <h1>{{ product.name }}</h1>
         {% if product.price is defined %}
-            <p class="price-large">${{ '%.2f'|format(product.price|float) }}</p>
+            <p class="price-large">G${{ '%.2f'|format(product.price|float) }}</p>
             {% set quantity = product.quantity if product.quantity is defined and product.quantity is not none else 0 %}
             {% if quantity > 0 %}
                 <p class="stock-indicator in-stock">
