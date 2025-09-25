@@ -669,31 +669,33 @@ footer {
 
 /* Mobile Responsive Improvements */
 @media (max-width: 768px) {
-  /* Place brand (left), cart (center), toggler (right) on a single row */
+  /* Simple flexbox layout: brand left, toggler right */
   .navbar .container {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: var(--spacing-sm);
+    flex-wrap: wrap;
   }
 
   .navbar .navbar-brand {
-    justify-self: start;
     margin-right: 0;
   }
 
-  .navbar .mobile-cart {
-    justify-self: center;
-  }
-
   .navbar .navbar-toggler {
-    justify-self: end;
+    order: 2;
   }
 
   /* Ensure collapse menu spans full width below the top row */
   .navbar .navbar-collapse {
-    grid-column: 1 / -1;
+    order: 3;
+    width: 100%;
     margin-top: var(--spacing-sm);
+  }
+
+  /* Center the navigation items when expanded */
+  .navbar .navbar-collapse .navbar-nav {
+    justify-content: center;
+    text-align: center;
   }
 
   .hero {
