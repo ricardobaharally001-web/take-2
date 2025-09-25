@@ -119,7 +119,7 @@ def get_guyana_time():
 
 def format_currency(amount):
     """Format amount as Guyanese Dollar (GYD)."""
-    return f"G${amount:.2f}"
+    return f"GYD ${amount:.2f}"
 
 def save_settings(settings):
     try:
