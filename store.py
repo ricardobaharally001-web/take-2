@@ -72,31 +72,43 @@ def get_safe_image_url(image_path):
     return image_path
 
 def load_settings():
-    """Load settings from the JSON file."""
+    """Load settings from Supabase first, then fallback to local JSON file."""
+    # Start with defaults
+    settings = DEFAULT_SETTINGS.copy()
+    
+    # Try to load from Supabase first (like products do)
+    if _sb_get_site_setting:
+        try:
+            # Load key settings from Supabase
+            logo_url = _sb_get_site_setting("logo_url")
+            if logo_url:
+                settings["logo_url"] = logo_url
+                
+            whatsapp_phone = _sb_get_site_setting("whatsapp_phone")
+            if whatsapp_phone:
+                settings["whatsapp_phone"] = whatsapp_phone
+                
+            print("Successfully loaded settings from Supabase")
+        except Exception as e:
+            print(f"Error loading settings from Supabase: {e}")
+    
+    # Overlay with local file settings if they exist
     if os.path.exists(SETTINGS_FILE):
         try:
             with open(SETTINGS_FILE, 'r') as f:
-                loaded = json.load(f)
-                # Merge with defaults to ensure all keys exist
-                for key, value in DEFAULT_SETTINGS.items():
-                    loaded.setdefault(key, value)
-                return loaded
-        except (json.JSONDecodeError, IOError):
-            pass
-    return DEFAULT_SETTINGS.copy()
+                local_settings = json.load(f)
+                # Only use local settings for keys that weren't loaded from Supabase
+                for key, value in local_settings.items():
+                    if key not in ["logo_url", "whatsapp_phone"] or not settings.get(key):
+                        settings[key] = value
+                print("Merged local settings")
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"Error loading local settings: {e}")
+    
+    return settings
 
 def get_whatsapp_phone():
-    """Get WhatsApp phone number from Supabase first, then fallback to local settings."""
-    # Try to get from Supabase first
-    if _sb_get_site_setting:
-        try:
-            whatsapp_phone = _sb_get_site_setting("whatsapp_phone")
-            if whatsapp_phone:
-                return whatsapp_phone
-        except Exception:
-            pass
-    
-    # Fallback to local settings
+    """Get WhatsApp phone number (now handled by load_settings)."""
     settings = load_settings()
     return settings.get("whatsapp_phone", "")
 
