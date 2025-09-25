@@ -18,9 +18,20 @@ def _get_client():
     global _supabase_client
     if _supabase_client is None:
         url, key = _get_env()
-        if not url or not key:
-            raise RuntimeError("Supabase not configured. Set SUPABASE_URL and either SUPABASE_ANON_KEY or SUPABASE_SERVICE_ROLE_KEY.")
-        _supabase_client = create_client(url, key)
+        if not url:
+            raise RuntimeError("SUPABASE_URL environment variable is not set")
+        if not key:
+            raise RuntimeError("Neither SUPABASE_SERVICE_ROLE_KEY nor SUPABASE_ANON_KEY environment variable is set")
+        
+        print(f"Connecting to Supabase: {url[:50]}...")
+        print(f"Using key type: {'SERVICE_ROLE' if os.environ.get('SUPABASE_SERVICE_ROLE_KEY') else 'ANON'}")
+        
+        try:
+            _supabase_client = create_client(url, key)
+            print("Supabase client created successfully")
+        except Exception as e:
+            print(f"Failed to create Supabase client: {e}")
+            raise RuntimeError(f"Failed to connect to Supabase: {e}")
     return _supabase_client
 
 def _public_url(bucket: str, path: str) -> str:
@@ -100,30 +111,43 @@ def get_site_setting(key: str) -> str | None:
     2) Single-row config table: site_settings has a dedicated column, e.g. site_settings.logo_url
     3) Legacy table name: settings
     """
-    client = _get_client()
+    try:
+        client = _get_client()
+    except Exception as e:
+        print(f"Failed to get Supabase client for reading {key}: {e}")
+        return None
+    
     # Variant 1: key/value
     try:
         res = client.table("site_settings").select("value").eq("key", key).limit(1).execute()
         if res.data:
-            return res.data[0].get("value")
-    except Exception:
-        pass
+            value = res.data[0].get("value")
+            print(f"Retrieved {key} from site_settings key/value: {value}")
+            return value
+    except Exception as e:
+        print(f"Failed to read {key} from site_settings key/value: {e}")
 
     # Variant 2: dedicated column on site_settings
     try:
         res = client.table("site_settings").select(key).limit(1).execute()
         if res.data and res.data[0].get(key):
-            return res.data[0].get(key)
-    except Exception:
-        pass
+            value = res.data[0].get(key)
+            print(f"Retrieved {key} from site_settings column: {value}")
+            return value
+    except Exception as e:
+        print(f"Failed to read {key} from site_settings column: {e}")
 
     # Variant 3: dedicated column on settings
     try:
         res = client.table("settings").select(key).limit(1).execute()
         if res.data and res.data[0].get(key):
-            return res.data[0].get(key)
-    except Exception:
-        pass
+            value = res.data[0].get(key)
+            print(f"Retrieved {key} from settings column: {value}")
+            return value
+    except Exception as e:
+        print(f"Failed to read {key} from settings column: {e}")
+    
+    print(f"No value found for {key} in any table variant")
     return None
 
 def set_site_setting(key: str, value: str):
@@ -134,13 +158,19 @@ def set_site_setting(key: str, value: str):
     2) Update first row in site_settings setting a dedicated column; create row if none
     3) Update first row in settings table similarly
     """
-    client = _get_client()
+    try:
+        client = _get_client()
+    except Exception as e:
+        print(f"Failed to get Supabase client for saving {key}: {e}")
+        raise
+    
     # Variant 1: key/value table
     try:
-        client.table("site_settings").upsert({"key": key, "value": value}).execute()
+        result = client.table("site_settings").upsert({"key": key, "value": value}).execute()
+        print(f"Successfully saved {key} to site_settings key/value table")
         return
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Failed to save {key} to site_settings key/value: {e}")
 
     # Variant 2: dedicated column on site_settings
     try:
@@ -150,15 +180,18 @@ def set_site_setting(key: str, value: str):
             row_id = res.data[0].get("id")
             if row_id is not None:
                 client.table("site_settings").update({key: value}).eq("id", row_id).execute()
+                print(f"Successfully updated {key} in site_settings column (row {row_id})")
             else:
                 # No id column; do an update without filter (affects all rows)
                 client.table("site_settings").update({key: value}).execute()
+                print(f"Successfully updated {key} in site_settings column (no id)")
         else:
             # Insert a new row with the column
             client.table("site_settings").insert({key: value}).execute()
+            print(f"Successfully inserted {key} into site_settings column")
         return
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Failed to save {key} to site_settings column: {e}")
 
     # Variant 3: dedicated column on settings
     try:
@@ -167,9 +200,14 @@ def set_site_setting(key: str, value: str):
             row_id = res.data[0].get("id")
             if row_id is not None:
                 client.table("settings").update({key: value}).eq("id", row_id).execute()
+                print(f"Successfully updated {key} in settings column (row {row_id})")
             else:
                 client.table("settings").update({key: value}).execute()
+                print(f"Successfully updated {key} in settings column (no id)")
         else:
             client.table("settings").insert({key: value}).execute()
-    except Exception:
-        pass
+            print(f"Successfully inserted {key} into settings column")
+        return
+    except Exception as e:
+        print(f"Failed to save {key} to settings column: {e}")
+        raise RuntimeError(f"Failed to save {key} to any table variant")
