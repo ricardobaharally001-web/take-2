@@ -168,67 +168,6 @@ body {
   color: var(--primary-blue) !important;
 }
 
-/* Enhanced Button-like styling for nav links with prominent shadows */
-.navbar .nav-btn {
-  background: rgba(0, 0, 0, 0.05) !important;
-  border: 1px solid transparent !important;
-  border-radius: 8px !important;
-  padding: 8px 16px !important;
-  margin: 0 4px !important;
-  font-weight: 500 !important;
-  transition: all 0.2s ease !important;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15) !important;
-  text-decoration: none !important;
-  color: var(--fg) !important;
-}
-
-.navbar .nav-btn:hover {
-  background: rgba(0, 0, 0, 0.1) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2) !important;
-  color: var(--fg) !important;
-}
-
-/* Dark mode nav button styling */
-html[data-theme="dark"] .navbar .nav-btn {
-  background: rgba(255, 255, 255, 0.05) !important;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.15) !important;
-}
-
-html[data-theme="dark"] .navbar .nav-btn:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.2) !important;
-}
-
-/* Dark mode toggle button styling with enhanced shadows */
-.navbar .nav-btn-toggle {
-  background: rgba(0, 0, 0, 0.05) !important;
-  border: 1px solid transparent !important;
-  border-radius: 8px !important;
-  padding: 8px 12px !important;
-  font-weight: 500 !important;
-  transition: all 0.2s ease !important;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15) !important;
-  color: var(--fg) !important;
-}
-
-.navbar .nav-btn-toggle:hover {
-  background: rgba(0, 0, 0, 0.1) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2) !important;
-  color: var(--fg) !important;
-}
-
-html[data-theme="dark"] .navbar .nav-btn-toggle {
-  background: rgba(255, 255, 255, 0.05) !important;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.15) !important;
-}
-
-html[data-theme="dark"] .navbar .nav-btn-toggle:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.2) !important;
-}
-
 .navbar-nav .nav-link.active {
   background-color: var(--primary-blue);
   color: white !important;
