@@ -44,7 +44,7 @@
             <h5 class="card-title">{{ p.name }}</h5>
             <p class="text-muted small">{{ p.description[:50] }}...</p>
             {% if p.price is defined %}
-                <p class="price">${{ '%.2f'|format(p.price|float) }}</p>
+                <p class="price">G${{ '%.2f'|format(p.price|float) }}</p>
                 {% set quantity = p.quantity if p.quantity is defined and p.quantity is not none else 0 %}
                 {% if quantity > 0 %}
                     <p class="stock-status text-success small">
