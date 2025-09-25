@@ -11,31 +11,18 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev")
 app.register_blueprint(store_mod.store_bp, url_prefix="")
 
 def _site_settings():
-    """Load your local settings and merge a Supabase-hosted logo and WhatsApp phone if present."""
-    site = {}
+    """Load settings (now automatically includes Supabase data)."""
     try:
         site = store_mod.load_settings() or {}
     except Exception:
         site = {}
-    # If a hosted logo was saved in Supabase site_settings, prefer it
-    try:
-        logo_url = get_site_setting("logo_url")
-        if logo_url:
-            site["logo_url"] = logo_url
-    except Exception:
-        pass
-    # If WhatsApp phone number was saved in Supabase site_settings, prefer it
-    try:
-        whatsapp_phone = get_site_setting("whatsapp_phone")
-        if whatsapp_phone:
-            site["whatsapp_phone"] = whatsapp_phone
-    except Exception:
-        pass
-    # Fallback brand name
+    
+    # Ensure fallback values
     site.setdefault("brand_name", "S.B Shop")
     site.setdefault("welcome_title", "Welcome")
     site.setdefault("welcome_subtitle", "")
     site.setdefault("whatsapp_phone", "")
+    site.setdefault("logo_url", "")
     return site
 
 @app.route("/")
