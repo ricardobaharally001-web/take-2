@@ -72,34 +72,33 @@ def get_safe_image_url(image_path):
     return image_path
 
 def load_settings():
-    """Load site settings from file or defaults"""
-    try:
-        if os.path.exists(SETTINGS_FILE):
-            with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                # ensure missing keys filled
-                merged = {**DEFAULT_SETTINGS, **data}
-                # If Supabase has a hosted logo URL, prefer it to avoid losing logo on redeploy
-                if _sb_get_site_setting:
-                    try:
-                        hosted_logo = _sb_get_site_setting("logo_url")
-                        if hosted_logo:
-                            merged["logo_url"] = hosted_logo
-                    except Exception:
-                        pass
-                return merged
-    except Exception as e:
-        print(f"Error reading settings: {e}")
-    # Fall back to defaults, optionally overlay hosted logo
-    defaults = DEFAULT_SETTINGS.copy()
+    """Load settings from the JSON file."""
+    if os.path.exists(SETTINGS_FILE):
+        try:
+            with open(SETTINGS_FILE, 'r') as f:
+                loaded = json.load(f)
+                # Merge with defaults to ensure all keys exist
+                for key, value in DEFAULT_SETTINGS.items():
+                    loaded.setdefault(key, value)
+                return loaded
+        except (json.JSONDecodeError, IOError):
+            pass
+    return DEFAULT_SETTINGS.copy()
+
+def get_whatsapp_phone():
+    """Get WhatsApp phone number from Supabase first, then fallback to local settings."""
+    # Try to get from Supabase first
     if _sb_get_site_setting:
         try:
-            hosted_logo = _sb_get_site_setting("logo_url")
-            if hosted_logo:
-                defaults["logo_url"] = hosted_logo
+            whatsapp_phone = _sb_get_site_setting("whatsapp_phone")
+            if whatsapp_phone:
+                return whatsapp_phone
         except Exception:
             pass
-    return defaults
+    
+    # Fallback to local settings
+    settings = load_settings()
+    return settings.get("whatsapp_phone", "")
 
 def save_settings(settings):
     try:
@@ -532,8 +531,7 @@ def api_check_stock(pid):
 @store_bp.route("/api/whatsapp-settings")
 def get_whatsapp_settings():
     """Get WhatsApp phone number for checkout integration"""
-    settings = load_settings()
-    whatsapp_phone = settings.get("whatsapp_phone", "")
+    whatsapp_phone = get_whatsapp_phone()
     return jsonify({
         "whatsapp_enabled": bool(whatsapp_phone),
         "whatsapp_phone": whatsapp_phone
@@ -546,8 +544,7 @@ def checkout():
     customer_name = payload.get('customer_name', '').strip()
     
     # Check if WhatsApp integration is enabled
-    settings = load_settings()
-    whatsapp_phone = settings.get("whatsapp_phone", "")
+    whatsapp_phone = get_whatsapp_phone()
     
     if whatsapp_phone and not customer_name:
         return jsonify({
@@ -710,12 +707,26 @@ def admin_settings():
             import re
             if re.match(r'^\+[1-9]\d{1,14}$', whatsapp_phone):
                 settings["whatsapp_phone"] = whatsapp_phone
-                flash("WhatsApp phone number updated", "success")
+                # Save to Supabase site_settings table
+                if _sb_set_site_setting:
+                    try:
+                        _sb_set_site_setting("whatsapp_phone", whatsapp_phone)
+                        flash("WhatsApp phone number updated and saved to database", "success")
+                    except Exception as e:
+                        flash(f"WhatsApp phone number updated locally, but failed to save to database: {e}", "warning")
+                else:
+                    flash("WhatsApp phone number updated locally", "success")
             else:
                 flash("Invalid phone number format. Please use international format (e.g., +1234567890)", "danger")
                 return render_template("admin_settings.html", settings=settings)
         else:
             settings["whatsapp_phone"] = ""
+            # Clear from Supabase site_settings table
+            if _sb_set_site_setting:
+                try:
+                    _sb_set_site_setting("whatsapp_phone", "")
+                except Exception:
+                    pass  # Ignore errors when clearing
         
         current_pw = request.form.get("current_password", "").strip()
         new_pw = request.form.get("new_password", "").strip()
