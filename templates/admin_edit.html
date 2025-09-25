@@ -19,7 +19,7 @@
           <input type="text" class="form-control" name="name" value="{{ product.name }}" required>
         </div>
         <div class="col-md-2">
-          <label class="form-label">Price (USD)</label>
+          <label class="form-label">Price (GYD)</label>
           <input type="number" step="0.01" class="form-control" name="price" 
                  value="{{ product.price if product.price is defined else '' }}"
                  placeholder="Leave blank for no price">
