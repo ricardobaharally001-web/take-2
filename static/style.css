@@ -184,16 +184,6 @@ body {
   box-shadow: none;
 }
 
-/* Ensure hamburger icon is visible in dark mode */
-html[data-theme="dark"] .navbar-toggler {
-  border-color: var(--border);
-}
-
-/* Override Bootstrap's default toggler icon to white when in dark mode */
-html[data-theme="dark"] .navbar-toggler-icon {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255,255,255, 0.85)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
-}
-
 /* Professional Button Styles */
 .btn {
   font-family: var(--font-family);
@@ -615,28 +605,6 @@ footer {
   color: var(--danger-red);
 }
 
-/* Stock Status for Product Cards */
-.stock-status {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  font-size: var(--font-size-xs);
-  font-weight: 500;
-  margin-bottom: var(--spacing-sm);
-}
-
-.stock-status.text-success {
-  color: var(--success-green) !important;
-}
-
-.stock-status.text-danger {
-  color: var(--danger-red) !important;
-}
-
-.stock-status.text-warning {
-  color: var(--warning-orange) !important;
-}
-
 /* Search and Filter Bar */
 .search-filter-bar {
   background-color: var(--light-bg);
@@ -669,33 +637,31 @@ footer {
 
 /* Mobile Responsive Improvements */
 @media (max-width: 768px) {
-  /* Simple flexbox layout: brand left, toggler right */
+  /* Place brand (left), cart (center), toggler (right) on a single row */
   .navbar .container {
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    flex-wrap: wrap;
+    gap: var(--spacing-sm);
   }
 
   .navbar .navbar-brand {
+    justify-self: start;
     margin-right: 0;
   }
 
+  .navbar .mobile-cart {
+    justify-self: center;
+  }
+
   .navbar .navbar-toggler {
-    order: 2;
+    justify-self: end;
   }
 
   /* Ensure collapse menu spans full width below the top row */
   .navbar .navbar-collapse {
-    order: 3;
-    width: 100%;
+    grid-column: 1 / -1;
     margin-top: var(--spacing-sm);
-  }
-
-  /* Center the navigation items when expanded */
-  .navbar .navbar-collapse .navbar-nav {
-    justify-content: center;
-    text-align: center;
   }
 
   .hero {
@@ -1216,3 +1182,21 @@ html[data-theme="dark"] .form-select:focus {
     --font-size-xl: 1.125rem;
   }
 }
+
+/* --- Professional look upgrades --- */
+.hero{background:linear-gradient(135deg,#f8fafc,#eef2ff); border-radius:18px; padding:2rem;}
+.card{border:1px solid rgba(0,0,0,.06); border-radius:14px;}
+.product-card{transition:transform .18s ease, box-shadow .18s ease;}
+.product-card:hover{transform:translateY(-3px); box-shadow:0 10px 24px rgba(0,0,0,.10);}
+.price{font-weight:700;}
+.badge-soft{background: rgba(25,135,84,.08); color:#198754; border:1px solid rgba(25,135,84,.15);}
+.btn{border-radius:10px; font-weight:600;}
+.btn-primary{box-shadow:0 6px 16px rgba(13,110,253,.2);}
+.navbar{background:var(--bs-body-bg);}
+[data-theme="dark"] .navbar{background:#0c0f13;}
+/* Make mobile hamburger icon visible in dark mode */
+.navbar-light .navbar-toggler-icon{filter:none;}
+[data-theme="dark"] .navbar-toggler{border-color:#39424e;}
+[data-theme="dark"] .navbar-toggler-icon{filter: invert(1) grayscale(1);}
+/* Cards in dark mode */
+[data-theme="dark"] .card{background:#12161c; border-color:#1f2732;}
