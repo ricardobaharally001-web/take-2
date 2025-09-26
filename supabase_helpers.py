@@ -51,94 +51,6 @@ def supabase():
         _client = create_client(url, key)
     return _client
 
-def _load_json_cache():
-    """Load data from JSON cache with timestamp checking and Supabase sync"""
-    global _products_cache, _products_cache_time, _categories_cache, _categories_cache_time
-    current_time = datetime.now().timestamp()
-    
-    # Load products cache if expired or empty
-    if _products_cache is None or (current_time - _products_cache_time) > CACHE_DURATION:
-        products_loaded = False
-        if os.path.exists(PRODUCTS_FILE):
-            try:
-                with open(PRODUCTS_FILE, 'r', encoding='utf-8') as f:
-                    _products_cache = json.load(f)
-                    _products_cache_time = current_time
-                    products_loaded = True
-                    if IS_PRODUCTION:
-                        print(f"✓ Loaded {len(_products_cache)} products from cache")
-            except Exception as e:
-                print(f"Warning: Error loading products cache: {e}")
-                _products_cache = []
-        else:
-            _products_cache = []
-        
-        # If no cache or cache loading failed, try to load from Supabase
-        if not products_loaded or not _products_cache:
-            try:
-                sb = supabase()
-                try:
-                    res = sb.table("menu_items").select("id,name,description,price,image_url,quantity,category_id,created_at").order("created_at", desc=True).execute()
-                    supabase_products = res.data or []
-                except Exception:
-                    res = sb.table("menu_items").select("id,name,description,price,category_id,created_at").order("created_at", desc=True).execute()
-                    supabase_products = res.data or []
-                
-                if supabase_products:
-                    _products_cache = supabase_products
-                    _products_cache_time = current_time
-                    _save_json_cache()  # Save to cache
-                    if IS_PRODUCTION:
-                        print(f"✓ Loaded {len(supabase_products)} products from Supabase")
-                else:
-                    # Create default products if none exist
-                    _products_cache = []
-            except Exception as e:
-                print(f"Error loading products from Supabase: {e}")
-                if not products_loaded:
-                    _products_cache = []
-    
-    # Load categories cache if expired or empty
-    if _categories_cache is None or (current_time - _categories_cache_time) > CACHE_DURATION:
-        categories_loaded = False
-        if os.path.exists(CATEGORIES_FILE):
-            try:
-                with open(CATEGORIES_FILE, 'r', encoding='utf-8') as f:
-                    _categories_cache = json.load(f)
-                    _categories_cache_time = current_time
-                    categories_loaded = True
-                    if IS_PRODUCTION:
-                        print(f"✓ Loaded {len(_categories_cache)} categories from cache")
-            except Exception as e:
-                print(f"Warning: Error loading categories cache: {e}")
-                _categories_cache = [{"id": 1, "name": "All", "slug": "all"}]
-        else:
-            _categories_cache = [{"id": 1, "name": "All", "slug": "all"}]
-        
-        # If no cache or cache loading failed, try to load from Supabase
-        if not categories_loaded or not _categories_cache:
-            try:
-                sb = supabase()
-                res = sb.table("menu_categories").select("id,name,created_at").order("name").execute()
-                supabase_categories = res.data or []
-                
-                if supabase_categories:
-                    _categories_cache = supabase_categories
-                    _categories_cache_time = current_time
-                    _save_json_cache()  # Save to cache
-                    if IS_PRODUCTION:
-                        print(f"✓ Loaded {len(supabase_categories)} categories from Supabase")
-                else:
-                    # Ensure at least one category exists
-                    _categories_cache = [{"id": 1, "name": "All", "slug": "all"}]
-                    _save_json_cache()
-            except Exception as e:
-                print(f"Error loading categories from Supabase: {e}")
-                if not categories_loaded:
-                    _categories_cache = [{"id": 1, "name": "All", "slug": "all"}]
-    
-    return _products_cache, _categories_cache
-
 def _save_json_cache():
     """Save data to JSON cache files"""
     global _products_cache, _categories_cache
@@ -605,7 +517,6 @@ def upload_item_image(file_storage) -> str:
 def initialize_cache_from_supabase():
     """
     Initialize JSON cache from Supabase data (call this on app startup).
-    Same as refresh_cache_from_supabase but with different logging.
     """
     global _products_cache, _products_cache_time, _categories_cache, _categories_cache_time
     
