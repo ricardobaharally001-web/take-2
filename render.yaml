@@ -1,24 +1,21 @@
 services:
   - type: web
-    name: sb-shop
+    name: restaurant-menu
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
+    autoDeploy: true
     envVars:
-      - key: PYTHON_VERSION
-        value: "3.11.0"
       - key: SECRET_KEY
         generateValue: true
+      - key: ADMIN_PASSWORD
+        value: admin
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: SUPABASE_BUCKET
-        value: "products"
+      - key: RENDER
+        value: true
       - key: SUPABASE_ASSETS_BUCKET
-        value: "assets"
-      - key: ADMIN_PASSWORD
-        sync: false
+        value: assets

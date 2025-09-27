@@ -1,41 +1,80 @@
-# S.B Shop — Flask + Supabase + Render (Shopify‑style)
+# Restaurant Menu (Flask + Supabase)
 
-A minimal, clean storefront you can deploy to **Render**, store images in **Supabase Storage**, and host code on **GitHub**.
+A simple restaurant menu site that mirrors your `take-2-main` stack (Flask + Supabase + Render). Cooks can log into admin and add food categories (e.g., Breakfast, Lunch) and menu items (e.g., Curry, Fried Rice). This is a working design with basic forms and no custom JavaScript.
 
 ## Features
-- Light gray navbar (black in dark mode)
-- Desktop: **left** controls (dark mode, Shop, Orders), **center** cart, **right** logo + brand
-- Mobile: **left** logo + brand, **center** cart, **right** hamburger menu (off‑canvas)
-- Shopify‑like product grid, responsive and tidy “center‑outward” layout
-- Dark mode toggle (persisted via `localStorage`)
-- Simple cart (client‑side), checkout stub
-- **Admin upload** (optional): add products and upload images to Supabase public bucket
+- Admin login (password-only) to add categories and menu items
+- List categories and items on the public homepage
+- Uses Supabase for data storage (same env style as your other app)
+- Render-ready: `Procfile`, `render.yaml`, `requirements.txt`
 
-## Quickstart (Local)
-```bash
-cp .env.example .env  # fill values
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-python app.py
+## Environment Variables
+Create a `.env` locally (or set env on Render) with:
+
+- `SECRET_KEY` — Flask session secret (any random string)
+- `ADMIN_PASSWORD` — password for admin login (default: `admin`)
+- `SUPABASE_URL` — your Supabase project URL
+- `SUPABASE_ANON_KEY` — anon key (or set `SUPABASE_SERVICE_ROLE_KEY` for server-side writes)
+- `SUPABASE_SERVICE_ROLE_KEY` — preferred for server-side writes
+
+Optionally:
+- `SUPABASE_ASSETS_BUCKET` — defaults to `assets`
+
+## Supabase Tables
+Run these in Supabase SQL editor (or create via UI).
+
+```sql
+-- Categories table
+create table if not exists menu_categories (
+  id bigint primary key generated always as identity,
+  name text not null unique,
+  created_at timestamp with time zone default now()
+);
+
+-- Items table
+create table if not exists menu_items (
+  id bigint primary key generated always as identity,
+  category_id bigint not null references menu_categories(id) on delete cascade,
+  name text not null,
+  description text,
+  price numeric(10,2),
+  created_at timestamp with time zone default now()
+);
+
+-- Optional site settings (key/value)
+create table if not exists site_settings (
+  key text primary key,
+  value text
+);
 ```
 
-Visit http://localhost:5000
+Storage (optional): create an `assets` bucket if you want to store images later.
+
+## Local Development
+1. Create a virtualenv and install requirements:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+2. Create a `.env` file with the variables above.
+3. Run:
+   ```bash
+   flask --app app run --debug
+   ```
+4. Open http://localhost:5000
+
+## Admin
+- Go to `/admin/login` to sign in.
+- Admin dashboard at `/admin` lets you add categories and items.
 
 ## Deploy to Render
-- Push this repo to GitHub.
-- Create a **Web Service** on Render; it will auto-detect `render.yaml`.
-- Set environment variables:
-  - `SUPABASE_URL`
-  - `SUPABASE_ANON_KEY`
-  - `SUPABASE_BUCKET` (created as **public** in Supabase, default: `product-images`)
-  - `ADMIN_PASSWORD` (for `/admin`)
-- Render uses Gunicorn per `render.yaml`.
+- Push to GitHub.
+- Create a new Web Service in Render.
+- Use `render.yaml` in this repo or set:
+  - Start command: `gunicorn app:app`
+  - Build command: `pip install -r requirements.txt`
+- Add the environment variables from above.
 
-## Supabase Setup
-- In Supabase Storage, create a **public** bucket named `product-images` (or match `SUPABASE_BUCKET`).
-- Copy your Project URL and `anon` key into Render ENV.
-- The Admin page `/admin` lets you upload an image to the bucket and creates the product entry.
-
-## Fix for your previous error
-Your template referenced `url_for('store.products_view')` which **doesn't exist**.
-This starter uses `url_for('store.products')`, matching the blueprint endpoint, preventing the `BuildError`.
+## Notes
+- This is intentionally minimal (no JS required). You can style further or add images later.
