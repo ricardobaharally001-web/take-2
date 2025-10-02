@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { 
+  --bg: #ffffff; 
+  --fg: #0f172a; 
+}
+
+.dark { 
+  --bg: #0a0e1a; 
+  --fg: #e5e7eb; 
+}
+
+html, body { 
+  height: 100%; 
+}
+
+body {
+  @apply bg-[var(--bg)] text-[var(--fg)] antialiased;
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* Enhanced Components */
+.card { 
+  @apply rounded-2xl bg-white shadow-xl backdrop-blur transition-all dark:bg-gray-900/90; 
+}
+
+.container { 
+  @apply mx-auto max-w-7xl px-4; 
+}
+
+.btn { 
+  @apply inline-flex items-center justify-center rounded-xl px-5 py-2.5 font-medium transition-all duration-200; 
+}
+
+.btn-primary { 
+  @apply bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md hover:shadow-xl hover:scale-105; 
+}
+
+.btn-ghost { 
+  @apply bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800/50; 
+}
+
+.btn-danger { 
+  @apply bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md hover:shadow-xl hover:scale-105; 
+}
+
+.input { 
+  @apply w-full rounded-xl border border-gray-200 bg-white px-4 py-3 transition-all focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 dark:border-gray-700 dark:bg-gray-900; 
+}
+
+.label { 
+  @apply text-sm font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-400; 
+}
+
+.nav-link { 
+  @apply font-medium transition-colors hover:text-purple-600 dark:hover:text-purple-400; 
+}
+
+/* Toast Animation */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-gray-400 dark:bg-gray-600;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500 dark:bg-gray-500;
+}
